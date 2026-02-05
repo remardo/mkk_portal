@@ -118,7 +118,7 @@ export default function AdminUsersPage() {
           phone: formData.phone,
           role: formData.role,
           branch_id: formData.branch_id || null,
-        })
+        } as any)
         .eq("id", editingUser.id)
 
       if (error) throw error
