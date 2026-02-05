@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
 
     // Search for relevant documents in the AI index
     // Note: This requires the pgvector extension and proper setup
+    // @ts-ignore - RPC function not in generated types
     const { data: relevantDocs } = await supabase.rpc("match_documents", {
       query_embedding: queryEmbedding,
       match_threshold: 0.7,
