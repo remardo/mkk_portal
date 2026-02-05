@@ -119,9 +119,9 @@ export default function AdminUsersPage() {
         branch_id: formData.branch_id || null,
       }
       
-      // @ts-ignore
       const { error } = await supabase
         .from("profiles")
+        // @ts-ignore
         .update(updatePayload)
         .eq("id", editingUser.id)
 
@@ -138,9 +138,9 @@ export default function AdminUsersPage() {
 
   const handleDeactivate = async (userId: string) => {
     try {
-      // @ts-ignore
       const { error } = await supabase
         .from("profiles")
+        // @ts-ignore
         .update({ is_active: false })
         .eq("id", userId)
 
