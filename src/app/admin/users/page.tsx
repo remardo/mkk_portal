@@ -112,15 +112,17 @@ export default function AdminUsersPage() {
     if (!editingUser) return
 
     try {
-      // @ts-ignore - Supabase types issue
+      const updatePayload = {
+        full_name: formData.full_name,
+        phone: formData.phone,
+        role: formData.role,
+        branch_id: formData.branch_id || null,
+      }
+      
+      // @ts-ignore
       const { error } = await supabase
         .from("profiles")
-        .update({
-          full_name: formData.full_name,
-          phone: formData.phone,
-          role: formData.role,
-          branch_id: formData.branch_id || null,
-        })
+        .update(updatePayload)
         .eq("id", editingUser.id)
 
       if (error) throw error
@@ -136,6 +138,7 @@ export default function AdminUsersPage() {
 
   const handleDeactivate = async (userId: string) => {
     try {
+      // @ts-ignore
       const { error } = await supabase
         .from("profiles")
         .update({ is_active: false })
