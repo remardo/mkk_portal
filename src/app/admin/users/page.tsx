@@ -14,6 +14,7 @@ import { toast } from "sonner"
 import Link from "next/link"
 import { Plus, Search, ArrowLeft, Edit, Mail, Building2 } from "lucide-react"
 import { Profile, UserRole, Branch } from "@/types/database"
+import { Database } from "@/types/supabase"
 import { getRoleLabel } from "@/lib/utils"
 
 const roles: UserRole[] = [
@@ -111,14 +112,16 @@ export default function AdminUsersPage() {
     if (!editingUser) return
 
     try {
+      const updateData: Database['public']['Tables']['profiles']['Update'] = {
+        full_name: formData.full_name,
+        phone: formData.phone,
+        role: formData.role,
+        branch_id: formData.branch_id || null,
+      }
+      
       const { error } = await supabase
         .from("profiles")
-        .update({
-          full_name: formData.full_name,
-          phone: formData.phone,
-          role: formData.role,
-          branch_id: formData.branch_id || null,
-        } as any)
+        .update(updateData)
         .eq("id", editingUser.id)
 
       if (error) throw error
