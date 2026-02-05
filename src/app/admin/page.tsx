@@ -21,6 +21,7 @@ import {
   ArrowRight
 } from "lucide-react"
 import { formatDate, getRoleLabel } from "@/lib/utils"
+import { Profile } from "@/types/database"
 
 export default function AdminPage() {
   const [stats, setStats] = useState<any>(null)
@@ -45,7 +46,7 @@ export default function AdminPage() {
         .from("profiles")
         .select("role")
         .eq("id", user.id)
-        .single()
+        .single() as { data: Profile | null }
 
       if (profile?.role !== "it_admin" && profile?.role !== "director") {
         router.push("/dashboard")
