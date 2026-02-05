@@ -244,10 +244,11 @@ export default function AdminUsersPage() {
                         <Mail className="h-3 w-3" />
                         {user.email}
                       </span>
-                      {user.branch?.name && (
+                      {/* @ts-ignore */}
+                      {(user as any).branch?.name && (
                         <span className="flex items-center gap-1">
                           <Building2 className="h-3 w-3" />
-                          {user.branch.name}
+                          {(user as any).branch.name}
                         </span>
                       )}
                     </div>
