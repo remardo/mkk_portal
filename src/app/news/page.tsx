@@ -13,7 +13,7 @@ import { NewsWithRead } from "@/types/database"
 
 export default function NewsPage() {
   const [news, setNews] = useState<NewsWithRead[]>([])
-  const [readNewsIds, setReadNewsIds] = useState<Set<string>>(new Set()))
+  const [readNewsIds, setReadNewsIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
