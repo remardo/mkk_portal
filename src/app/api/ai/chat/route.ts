@@ -62,26 +62,30 @@ export async function POST(req: NextRequest) {
     if (!apiKey) {
       return NextResponse.json({ error: "AI service not configured" }, { status: 503 })
     }
-    const openai = new OpenAI({ apiKey })
+    const baseURL = process.env.OPENAI_BASE_URL || undefined
+    const openai = new OpenAI({ apiKey, ...(baseURL ? { baseURL } : {}) })
 
-    // Generate embedding for the query
-    const embeddingResponse = await openai.embeddings.create({
-      model: "text-embedding-3-small",
-      input: message,
-    })
-
-    const queryEmbedding = embeddingResponse.data[0].embedding
-
-    // Search for relevant documents in the AI index
-    // Note: This requires the pgvector extension and proper setup
+    // Vector search: embeddings may be unavailable on OpenAI-compatible
+    // providers (OpenRouter has no /embeddings), so degrade to text search.
     type MatchDoc = { content: string; title: string | null; source_id: string; source_type: string }
-    const { data: relevantDocs } = await supabase.rpc("match_documents" as never, {
-      query_embedding: queryEmbedding,
-      match_threshold: 0.7,
-      match_count: 5,
-      user_role: profile.role,
-      user_branch_id: profile.branch_id,
-    } as never) as unknown as { data: MatchDoc[] | null }
+    let relevantDocs: MatchDoc[] | null = null
+    try {
+      const embeddingResponse = await openai.embeddings.create({
+        model: process.env.OPENAI_EMBEDDINGS_MODEL || "text-embedding-3-small",
+        input: message,
+      })
+      const queryEmbedding = embeddingResponse.data[0].embedding
+      const { data } = await supabase.rpc("match_documents" as never, {
+        query_embedding: queryEmbedding,
+        match_threshold: 0.7,
+        match_count: 5,
+        user_role: profile.role,
+        user_branch_id: profile.branch_id,
+      } as never) as unknown as { data: MatchDoc[] | null }
+      relevantDocs = data
+    } catch (e) {
+      // No embeddings backend: fall back to text search below
+    }
 
     // If no relevant documents found, search using text search as fallback
     // RLS на knowledge_articles уже ограничивает видимость, дополнительный фильтр не нужен
