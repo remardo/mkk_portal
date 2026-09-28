@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 import Link from "next/link"
 import {
   CheckSquare,
@@ -18,7 +17,10 @@ import {
   AlertCircle,
   Bot,
 } from "lucide-react"
-import { formatDate, formatRelativeTime, getStatusColor, getPriorityColor, getRoleLabel } from "@/lib/utils"
+import { formatDate, formatRelativeTime, getStatusColor, getPriorityColor, getRoleLabel, isOverdue } from "@/lib/utils"
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -91,7 +93,7 @@ export default async function DashboardPage() {
       .order("due_date", { ascending: true })
       .limit(5),
     
-    // My courses in progress
+  // My courses in progress
     supabase
       .from("course_progress")
       .select("*, course:courses(*)")
@@ -106,18 +108,12 @@ export default async function DashboardPage() {
     filteredDocsQuery,
   ])
 
-  const isOverdue = (dueDate: string | null, status: string) => {
-    if (!dueDate) return false
-    if (['done', 'completed', 'rejected'].includes(status)) return false
-    return new Date(dueDate) < new Date()
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Добро пожаловать, {profile.full_name.split(" ")[0]}!</h1>
+          <h1 className="text-3xl font-bold">Добро пожаловать, {(profile.full_name || '').split(" ")[0] || 'Коллега'}!</h1>
           <p className="text-muted-foreground mt-1">
             {profile.branch?.name} • {getRoleLabel(profile.role)}
           </p>
@@ -302,7 +298,7 @@ export default async function DashboardPage() {
                           {progress.course?.title}
                         </Link>
                       </div>
-                      <Progress value={30} className="h-2" />
+                      <Progress value={progress.status === 'completed' ? 100 : 50} className="h-2" />
                       <p className="text-xs text-muted-foreground">В процессе</p>
                     </div>
                   ))

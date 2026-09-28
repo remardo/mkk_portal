@@ -27,7 +27,10 @@ export default function NewsPage() {
       
       // Get current user
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) {
+        toast.error("Сессия истекла, войдите снова")
+        return
+      }
       
       // Fetch news
       const { data: newsData } = await supabase
@@ -51,6 +54,7 @@ export default function NewsPage() {
       })))
     } catch (error) {
       console.error("Error fetching news:", error)
+      toast.error("Ошибка загрузки новостей")
     } finally {
       setLoading(false)
     }
@@ -78,6 +82,7 @@ export default function NewsPage() {
       toast.success("Отмечено как прочитанное")
     } catch (error) {
       console.error("Error marking news as read:", error)
+      toast.error("Ошибка при отметке новости")
     }
   }
 

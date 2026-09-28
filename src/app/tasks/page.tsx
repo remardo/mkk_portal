@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -15,7 +14,7 @@ import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { toast } from "sonner"
 import Link from "next/link"
-import { Plus, Search, Filter, CheckSquare, Clock, AlertCircle } from "lucide-react"
+import { Plus, Search, CheckSquare, Clock, AlertCircle } from "lucide-react"
 import { formatDate, getStatusColor, getPriorityColor, getTaskTypeLabel, getTaskPriorityLabel, getTaskStatusLabel, isOverdue } from "@/lib/utils"
 import { TaskWithDetails, TaskType, TaskPriority, Profile, Branch } from "@/types/database"
 
@@ -27,7 +26,6 @@ export default function TasksPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [currentUser, setCurrentUser] = useState<Profile | null>(null)
-  const router = useRouter()
   const supabase = createClient()
 
   // Form state
@@ -50,8 +48,11 @@ export default function TasksPage() {
       setLoading(true)
       
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) {
+        toast.error("Сессия истекла, войдите снова")
+        return
+      }
       
       const { data: profile } = await supabase
         .from("profiles")
@@ -88,6 +89,7 @@ export default function TasksPage() {
       setBranches(branchesData || [])
     } catch (error) {
       console.error("Error fetching tasks:", error)
+      toast.error("Ошибка загрузки задач")
     } finally {
       setLoading(false)
     }
@@ -128,7 +130,7 @@ export default function TasksPage() {
 
   const handleStatusChange = async (taskId: string, newStatus: string) => {
     try {
-      const updates: any = { status: newStatus }
+      const updates: Record<string, string> = { status: newStatus }
       if (newStatus === "done" || newStatus === "rejected") {
         updates.closed_at = new Date().toISOString()
       }
@@ -149,8 +151,8 @@ export default function TasksPage() {
   }
 
   const filteredTasks = tasks.filter(task =>
-    task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    task.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    (task.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (task.description || "").toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const myTasks = filteredTasks.filter(t => 
@@ -239,6 +241,9 @@ export default function TasksPage() {
 
   return (
     <div className="space-y-6">
+      {loading && tasks.length === 0 && (
+        <Card><CardContent className="py-12 text-center text-muted-foreground">Загрузка задач...</CardContent></Card>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

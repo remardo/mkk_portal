@@ -8,8 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
-import { FileText, Download, CheckCircle, AlertCircle, ExternalLink, Folder } from "lucide-react"
-import { formatDate, getStatusColor } from "@/lib/utils"
+import { FileText, CheckCircle, AlertCircle, ExternalLink } from "lucide-react"
+import { formatDate } from "@/lib/utils"
 import { DocumentWithCategory, DocumentCategory } from "@/types/database"
 
 export default function DocumentsPage() {
@@ -30,6 +30,10 @@ export default function DocumentsPage() {
       
       // Get current user
       const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        toast.error("Сессия истекла, войдите снова")
+        return
+      }
       
       // Fetch categories
       const { data: categoriesData } = await supabase
@@ -58,6 +62,7 @@ export default function DocumentsPage() {
       }
     } catch (error) {
       console.error("Error fetching documents:", error)
+      toast.error("Ошибка загрузки документов")
     } finally {
       setLoading(false)
     }
@@ -226,6 +231,13 @@ export default function DocumentsPage() {
         </TabsContent>
         
         <TabsContent value="mandatory" className="mt-6">
+          {loading ? (
+            <div className="space-y-4">
+              {[1, 2].map((i) => (
+                <Skeleton key={i} className="h-32 w-full" />
+              ))}
+            </div>
+          ) : (
           <div className="space-y-4">
             {mandatoryDocs.length > 0 ? (
               mandatoryDocs.map((doc) => <DocumentCard key={doc.id} doc={doc} />)
@@ -240,6 +252,7 @@ export default function DocumentsPage() {
               </Card>
             )}
           </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

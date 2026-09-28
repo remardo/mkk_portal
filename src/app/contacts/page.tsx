@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Search, Building2, MapPin, Phone, Clock, Users, Mail } from "lucide-react"
+import { toast } from "sonner"
 import { BranchWithManager, ProfileWithBranch } from "@/types/database"
 import { getRoleLabel } from "@/lib/utils"
 
@@ -44,6 +44,7 @@ export default function ContactsPage() {
       setEmployees(employeesData || [])
     } catch (error) {
       console.error("Error fetching contacts:", error)
+      toast.error("Ошибка загрузки контактов")
     } finally {
       setLoading(false)
     }

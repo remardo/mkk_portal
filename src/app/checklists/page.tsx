@@ -6,18 +6,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import Link from "next/link"
-import { ClipboardCheck, CheckCircle, Clock, AlertCircle, Camera, ChevronRight } from "lucide-react"
+import { ClipboardCheck, CheckCircle, AlertCircle, Camera } from "lucide-react"
 import { formatDate, getStatusColor, getChecklistStatusLabel, isOverdue } from "@/lib/utils"
-import { ChecklistRunWithDetails } from "@/types/database"
+import { ChecklistRunWithDetails, Profile } from "@/types/database"
 
 export default function ChecklistsPage() {
   const [checklists, setChecklists] = useState<ChecklistRunWithDetails[]>([])
   const [loading, setLoading] = useState(true)
-  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [currentUser, setCurrentUser] = useState<Profile | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -30,7 +28,10 @@ export default function ChecklistsPage() {
       
       // Get current user
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) {
+        toast.error("Сессия истекла, войдите снова")
+        return
+      }
       
       const { data: profile } = await supabase
         .from("profiles")
@@ -38,7 +39,10 @@ export default function ChecklistsPage() {
         .eq("id", user.id)
         .single()
       
-      if (!profile) return
+      if (!profile) {
+        toast.error("Профиль не найден")
+        return
+      }
       setCurrentUser(profile)
       
       // Fetch checklists for user's branch
@@ -51,39 +55,46 @@ export default function ChecklistsPage() {
         `)
         .eq("branch_id", profile.branch_id)
         .order("due_date", { ascending: true })
-      
-      // Fetch items for each checklist
-      const checklistsWithItems = await Promise.all(
-        (checklistsData || []).map(async (checklist) => {
-          const { data: items } = await supabase
-            .from("checklist_items")
-            .select("*")
-            .eq("checklist_id", checklist.checklist_id)
-            .order("order", { ascending: true })
-          
-          const { data: runItems } = await supabase
-            .from("checklist_run_items")
-            .select("*")
-            .eq("run_id", checklist.id)
-          
-          const runItemsMap = new Map(runItems?.map(ri => [ri.item_id, ri]) || [])
-          
-          return {
-            ...checklist,
-            items: items?.map(item => ({
-              ...item,
-              runItem: runItemsMap.get(item.id)
-            })) || [],
-            total_items: items?.length || 0,
-            completed_items: runItems?.filter(ri => ri.checked).length || 0,
-            is_overdue: isOverdue(checklist.due_date, checklist.status),
-          }
-        })
-      )
+
+      // Батчинг: 2 запроса вместо N*2
+      const runIds = (checklistsData || []).map(r => r.id)
+      const checklistIds = [...new Set((checklistsData || []).map(r => r.checklist_id))]
+      const { data: allItems } = checklistIds.length
+        ? await supabase.from("checklist_items").select("*").in("checklist_id", checklistIds).order("order", { ascending: true })
+        : { data: [] }
+      const { data: allRunItems } = runIds.length
+        ? await supabase.from("checklist_run_items").select("*").in("run_id", runIds)
+        : { data: [] }
+
+      const itemsByChecklist = new Map<string, typeof allItems>()
+      for (const it of (allItems || [])) {
+        const arr = itemsByChecklist.get(it.checklist_id) || []
+        arr.push(it)
+        itemsByChecklist.set(it.checklist_id, arr)
+      }
+      type RunItem = NonNullable<typeof allRunItems>[number]
+      const runItemsByRun = new Map<string, Map<string, RunItem>>()
+      for (const ri of (allRunItems || [])) {
+        if (!runItemsByRun.has(ri.run_id)) runItemsByRun.set(ri.run_id, new Map())
+        runItemsByRun.get(ri.run_id)!.set(ri.item_id, ri)
+      }
+
+      const checklistsWithItems = (checklistsData || []).map((checklist) => {
+        const items = itemsByChecklist.get(checklist.checklist_id) || []
+        const runMap = runItemsByRun.get(checklist.id) || new Map()
+        return {
+          ...checklist,
+          items: items.map(item => ({ ...item, runItem: runMap.get(item.id) })),
+          total_items: items.length,
+          completed_items: items.filter(i => runMap.get(i.id)?.checked).length,
+          is_overdue: isOverdue(checklist.due_date, checklist.status),
+        }
+      })
       
       setChecklists(checklistsWithItems)
     } catch (error) {
       console.error("Error fetching checklists:", error)
+      toast.error("Ошибка загрузки чек-листов")
     } finally {
       setLoading(false)
     }
@@ -266,6 +277,9 @@ export default function ChecklistsPage() {
 
   return (
     <div className="space-y-6">
+      {loading && checklists.length === 0 && (
+        <Card><CardContent className="py-12 text-center text-muted-foreground">Загрузка чек-листов...</CardContent></Card>
+      )}
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">Чек-листы</h1>

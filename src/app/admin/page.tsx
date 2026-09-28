@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
 import Link from "next/link"
 import { 
@@ -16,15 +15,22 @@ import {
   FileText, 
   GraduationCap, 
   ClipboardCheck,
-  Settings,
   Plus,
   ArrowRight
 } from "lucide-react"
-import { formatDate, getRoleLabel } from "@/lib/utils"
 import { Profile } from "@/types/database"
 
+type AdminStats = {
+  users: number
+  branches: number
+  articles: number
+  documents: number
+  courses: number
+  checklists: number
+}
+
 export default function AdminPage() {
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<AdminStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const router = useRouter()
@@ -58,6 +64,7 @@ export default function AdminPage() {
       fetchStats()
     } catch (error) {
       console.error("Error checking access:", error)
+      toast.error("Ошибка проверки доступа")
     }
   }
 
@@ -92,13 +99,18 @@ export default function AdminPage() {
       })
     } catch (error) {
       console.error("Error fetching stats:", error)
+      toast.error("Ошибка загрузки статистики")
     } finally {
       setLoading(false)
     }
   }
 
   if (!isAdmin) {
-    return null
+    return (
+      <div className="py-12 text-center text-muted-foreground">
+        {loading ? "Проверка доступа..." : "Нет доступа"}
+      </div>
+    )
   }
 
   const adminSections = [

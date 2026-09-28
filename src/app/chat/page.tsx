@@ -5,11 +5,9 @@ import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { Send, MessageSquare, Hash, Paperclip } from "lucide-react"
+import { Send, MessageSquare, Hash } from "lucide-react"
 import { formatRelativeTime } from "@/lib/utils"
 import { ChatChannel, ChatMessageWithAuthor, Profile } from "@/types/database"
 
@@ -73,7 +71,10 @@ export default function ChatPage() {
       
       // Get current user
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) {
+        toast.error("Сессия истекла, войдите снова")
+        return
+      }
       
       const { data: profile } = await supabase
         .from("profiles")
@@ -98,6 +99,7 @@ export default function ChatPage() {
       }
     } catch (error) {
       console.error("Error fetching chat data:", error)
+      toast.error("Ошибка загрузки чата")
     } finally {
       setLoading(false)
     }
@@ -115,6 +117,7 @@ export default function ChatPage() {
       setMessages(data || [])
     } catch (error) {
       console.error("Error fetching messages:", error)
+      toast.error("Ошибка загрузки сообщений")
     }
   }
 
@@ -155,6 +158,9 @@ export default function ChatPage() {
 
   return (
     <div className="h-[calc(100vh-120px)] flex flex-col">
+      {loading && channels.length === 0 && (
+        <Card><CardContent className="py-8 text-center text-muted-foreground">Загрузка чата...</CardContent></Card>
+      )}
       {/* Header */}
       <div className="mb-4">
         <h1 className="text-3xl font-bold">Чат</h1>

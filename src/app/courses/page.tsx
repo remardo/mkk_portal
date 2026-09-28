@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,16 +10,16 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
 import Link from "next/link"
-import { GraduationCap, Clock, CheckCircle, Play, AlertCircle, BookOpen } from "lucide-react"
-import { CourseWithProgress, Test, TestAttempt } from "@/types/database"
-import { formatDate } from "@/lib/utils"
+import { GraduationCap, Clock, CheckCircle, Play, BookOpen } from "lucide-react"
+import { CourseWithProgress, Test, TestAttempt, Profile } from "@/types/database"
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState<CourseWithProgress[]>([])
   const [tests, setTests] = useState<Test[]>([])
   const [attempts, setAttempts] = useState<TestAttempt[]>([])
   const [loading, setLoading] = useState(true)
-  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [currentUser, setCurrentUser] = useState<Profile | null>(null)
+  const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
@@ -31,7 +32,10 @@ export default function CoursesPage() {
       
       // Get current user
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) {
+        toast.error("Сессия истекла, войдите снова")
+        return
+      }
       
       const { data: profile } = await supabase
         .from("profiles")
@@ -41,36 +45,36 @@ export default function CoursesPage() {
       
       setCurrentUser(profile)
       
-      // Fetch courses with progress
+      // Fetch courses with progress: 3 запроса вместо N*2
       const { data: coursesData } = await supabase
         .from("courses")
         .select("*")
         .order("created_at", { ascending: false })
-      
-      // Fetch progress for each course
-      const coursesWithProgress = await Promise.all(
-        (coursesData || []).map(async (course) => {
-          const { data: progress } = await supabase
-            .from("course_progress")
-            .select("*")
-            .eq("course_id", course.id)
-            .eq("user_id", user.id)
-            .single()
-          
-          const { count: lessonsCount } = await supabase
-            .from("course_lessons")
-            .select("*", { count: "exact", head: true })
-            .eq("course_id", course.id)
-          
-          return {
-            ...course,
-            progress: progress || undefined,
-            progress_percent: progress?.status === "completed" ? 100 : 
-                             progress?.status === "in_progress" ? 50 : 0,
-            total_lessons: lessonsCount || 0,
-          }
-        })
-      )
+
+      const courseIds = (coursesData || []).map(c => c.id)
+      const { data: progressRows } = courseIds.length
+        ? await supabase.from("course_progress").select("*").eq("user_id", user.id).in("course_id", courseIds)
+        : { data: [] }
+      const { data: lessonRows } = courseIds.length
+        ? await supabase.from("course_lessons").select("course_id").in("course_id", courseIds)
+        : { data: [] }
+
+      const lessonsCount = new Map<string, number>()
+      for (const r of (lessonRows || [])) {
+        lessonsCount.set(r.course_id, (lessonsCount.get(r.course_id) || 0) + 1)
+      }
+      const progressByCourse = new Map((progressRows || []).map(p => [p.course_id, p]))
+
+      const coursesWithProgress = (coursesData || []).map((course) => {
+        const progress = progressByCourse.get(course.id)
+        return {
+          ...course,
+          progress: progress || undefined,
+          progress_percent: progress?.status === "completed" ? 100 :
+            progress?.status === "in_progress" ? 50 : 0,
+          total_lessons: lessonsCount.get(course.id) || 0,
+        }
+      })
       
       setCourses(coursesWithProgress)
       
@@ -91,6 +95,7 @@ export default function CoursesPage() {
       setAttempts(attemptsData || [])
     } catch (error) {
       console.error("Error fetching courses:", error)
+      toast.error("Ошибка загрузки обучения")
     } finally {
       setLoading(false)
     }
@@ -112,7 +117,7 @@ export default function CoursesPage() {
       if (error) throw error
       
       // Navigate to course
-      window.location.href = `/courses/${courseId}`
+      router.push(`/courses/${courseId}`)
     } catch (error) {
       console.error("Error starting course:", error)
       toast.error("Ошибка при начале курса")
@@ -146,7 +151,7 @@ export default function CoursesPage() {
       if (error) throw error
       
       // Navigate to test
-      window.location.href = `/tests/${testId}/attempt/${data.id}`
+      router.push(`/tests/${testId}/attempt/${data.id}`)
     } catch (error) {
       console.error("Error starting test:", error)
       toast.error("Ошибка при начале теста")
@@ -224,6 +229,9 @@ export default function CoursesPage() {
 
   return (
     <div className="space-y-6">
+      {loading && courses.length === 0 && (
+        <Card><CardContent className="py-12 text-center text-muted-foreground">Загрузка курсов...</CardContent></Card>
+      )}
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">Обучение</h1>

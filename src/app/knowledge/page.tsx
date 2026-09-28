@@ -6,11 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Separator } from "@/components/ui/separator"
+import { toast } from "sonner"
 import Link from "next/link"
-import { Search, BookOpen, Eye, Folder, Tag, ChevronRight } from "lucide-react"
+import { Search, BookOpen, Eye, Folder, Tag } from "lucide-react"
 import { formatDate, truncateText } from "@/lib/utils"
 import { KnowledgeArticleWithCategory, KnowledgeCategory } from "@/types/database"
 
@@ -48,6 +48,7 @@ export default function KnowledgePage() {
       setArticles(articlesData || [])
     } catch (error) {
       console.error("Error fetching knowledge data:", error)
+      toast.error("Ошибка загрузки базы знаний")
     } finally {
       setLoading(false)
     }
@@ -66,7 +67,11 @@ export default function KnowledgePage() {
       
       if (data) {
         // Fetch full article data for search results
-        const articleIds = data.map((r: any) => r.id)
+        const articleIds = data.map((r: { id: string }) => r.id)
+        if (articleIds.length === 0) {
+          setArticles([])
+          return
+        }
         const { data: fullArticles } = await supabase
           .from("knowledge_articles")
           .select("*, category:knowledge_categories(*), created_by_profile:profiles(full_name)")
@@ -76,6 +81,7 @@ export default function KnowledgePage() {
       }
     } catch (error) {
       console.error("Error searching:", error)
+      toast.error("Ошибка поиска")
     } finally {
       setLoading(false)
     }

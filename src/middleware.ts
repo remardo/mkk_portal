@@ -56,12 +56,27 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  const pathname = request.nextUrl.pathname
+  const isRoute = (route: string) => pathname === route || pathname.startsWith(route + '/')
+
   // Protected routes
   const protectedRoutes = ['/dashboard', '/knowledge', '/documents', '/courses', '/checklists', '/tasks', '/news', '/chat', '/admin', '/profile', '/contacts', '/ai-assistant']
-  const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route))
+  const isProtectedRoute = protectedRoutes.some(isRoute)
 
   if (isProtectedRoute && !user) {
     return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // /admin: только it_admin и director
+  if (user && isRoute('/admin')) {
+    const { data: adminProfile } = await supabase
+      .from('profiles')
+      .select('role,is_active')
+      .eq('id', user.id)
+      .single()
+    if (!adminProfile || adminProfile.is_active !== true || !['it_admin', 'director'].includes(adminProfile.role)) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
   }
 
   // Deactivate redirect loop: inactive or missing profile must not stay authenticated.
@@ -89,7 +104,7 @@ export async function middleware(request: NextRequest) {
 
   // Redirect authenticated users from auth pages
   const authRoutes = ['/login', '/register']
-  const isAuthRoute = authRoutes.some(route => request.nextUrl.pathname === route)
+  const isAuthRoute = authRoutes.some(route => pathname === route || pathname === route + '/')
 
   if (isAuthRoute && user) {
     return NextResponse.redirect(new URL('/dashboard', request.url))

@@ -30,12 +30,12 @@ export async function POST(req: NextRequest) {
     // Get user profile for RLS
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role, branch_id")
+      .select("role, branch_id, is_active")
       .eq("id", user.id)
       .single()
 
-    if (!profile) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 })
+    if (!profile || profile.is_active !== true) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     const body = await req.json()
@@ -74,22 +74,23 @@ export async function POST(req: NextRequest) {
 
     // Search for relevant documents in the AI index
     // Note: This requires the pgvector extension and proper setup
-    // @ts-ignore - RPC function not in generated types
-    const { data: relevantDocs } = await supabase.rpc("match_documents", {
+    type MatchDoc = { content: string; title: string | null; source_id: string; source_type: string }
+    const { data: relevantDocs } = await supabase.rpc("match_documents" as never, {
       query_embedding: queryEmbedding,
       match_threshold: 0.7,
       match_count: 5,
       user_role: profile.role,
       user_branch_id: profile.branch_id,
-    })
+    } as never) as unknown as { data: MatchDoc[] | null }
 
     // If no relevant documents found, search using text search as fallback
+    // RLS на knowledge_articles уже ограничивает видимость, дополнительный фильтр не нужен
     let context = ""
     let sources: { title: string; id: string; type: string }[] = []
 
     if (relevantDocs && relevantDocs.length > 0) {
-      context = relevantDocs.map((doc: any) => doc.content).join("\n\n")
-      sources = relevantDocs.map((doc: any) => ({
+      context = relevantDocs.map((doc) => doc.content).join("\n\n")
+      sources = relevantDocs.map((doc) => ({
         title: doc.title || "База знаний",
         id: doc.source_id,
         type: doc.source_type,

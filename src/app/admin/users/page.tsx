@@ -61,12 +61,13 @@ export default function AdminUsersPage() {
     try {
       setLoading(true)
       
-      const { data: usersData } = await supabase
+      const { data: usersData, error: usersError } = await supabase
         .from("profiles")
         .select("*, branch:branches!fk_profiles_branch(name)")
         .order("full_name")
-      
-      setUsers(usersData || [])
+
+      if (usersError) throw usersError
+      setUsers((usersData || []) as unknown as Profile[])
       
       const { data: branchesData } = await supabase
         .from("branches")
@@ -77,6 +78,7 @@ export default function AdminUsersPage() {
       setBranches(branchesData || [])
     } catch (error) {
       console.error("Error fetching data:", error)
+      toast.error("Ошибка загрузки пользователей")
     } finally {
       setLoading(false)
     }
@@ -110,9 +112,9 @@ export default function AdminUsersPage() {
       })
       toast.success("Пользователь создан")
       fetchData()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating user:", error)
-      toast.error(error.message || "Ошибка при создании пользователя")
+      toast.error(error instanceof Error ? error.message : "Ошибка при создании пользователя")
     } finally {
       setCreating(false)
     }
@@ -131,8 +133,7 @@ export default function AdminUsersPage() {
       
       const { error } = await supabase
         .from("profiles")
-        // @ts-ignore
-        .update(updatePayload)
+        .update(updatePayload as never)
         .eq("id", editingUser.id)
 
       if (error) throw error
@@ -150,8 +151,7 @@ export default function AdminUsersPage() {
     try {
       const { error } = await supabase
         .from("profiles")
-        // @ts-ignore
-        .update({ is_active: false })
+        .update({ is_active: false } as never)
         .eq("id", userId)
 
       if (error) throw error
@@ -190,8 +190,8 @@ export default function AdminUsersPage() {
   }
 
   const filteredUsers = users.filter(u =>
-    u.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchQuery.toLowerCase())
+    (u.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (u.email || "").toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   return (
@@ -241,7 +241,7 @@ export default function AdminUsersPage() {
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                     <span className="text-sm font-medium text-primary">
-                      {user.full_name.split(" ").map(n => n[0]).join("").toUpperCase()}
+                      {(user.full_name || '').split(" ").map(n => n[0]).join("").toUpperCase()}
                     </span>
                   </div>
                   <div>
@@ -251,11 +251,10 @@ export default function AdminUsersPage() {
                         <Mail className="h-3 w-3" />
                         {user.email}
                       </span>
-                      {/* @ts-ignore */}
-                      {(user as any).branch?.name && (
+                      {(user as Profile & { branch?: { name?: string } }).branch?.name && (
                         <span className="flex items-center gap-1">
                           <Building2 className="h-3 w-3" />
-                          {(user as any).branch.name}
+                          {(user as Profile & { branch?: { name?: string } }).branch?.name}
                         </span>
                       )}
                     </div>

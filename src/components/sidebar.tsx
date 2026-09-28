@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { getRoleLabel } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
@@ -21,7 +22,7 @@ import {
   Bot,
   LogOut,
 } from "lucide-react"
-import { Profile, UserRole } from "@/types/database"
+import { Profile } from "@/types/database"
 
 interface SidebarProps {
   user: Profile | null
@@ -137,18 +138,4 @@ export function Sidebar({ user }: SidebarProps) {
       </div>
     </div>
   )
-}
-
-function getRoleLabel(role: UserRole): string {
-  const labels: Record<UserRole, string> = {
-    agent: "Сотрудник точки",
-    branch_manager: "Старший точки",
-    ops_manager: "Операционный руководитель",
-    director: "Директор",
-    security: "Безопасность",
-    accountant: "Бухгалтерия",
-    it_admin: "IT-администратор",
-    hr: "HR",
-  }
-  return labels[role] || role
 }

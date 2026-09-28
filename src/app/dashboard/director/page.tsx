@@ -34,9 +34,9 @@ import { toast } from "sonner"
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"]
 
 export default function DirectorDashboardPage() {
-  const [stats, setStats] = useState<any>(null)
-  const [branchStats, setBranchStats] = useState<any[]>([])
-  const [taskStats, setTaskStats] = useState<any[]>([])
+  const [stats, setStats] = useState<Record<string, number> | null>(null)
+  const [branchStats, setBranchStats] = useState<Record<string, number | string>[]>([])
+  const [taskStats, setTaskStats] = useState<{ type: string; count: number }[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
@@ -91,7 +91,7 @@ export default function DirectorDashboardPage() {
   }
 
   // Prepare chart data
-  const taskTypeData = taskStats.reduce((acc: any[], item: any) => {
+  const taskTypeData = taskStats.reduce<{ name: string; count: number }[]>((acc, item) => {
     const existing = acc.find(a => a.name === item.type)
     if (existing) {
       existing.count += item.count
@@ -304,7 +304,7 @@ export default function DirectorDashboardPage() {
                     <td className="py-3 px-4 text-center">{branch.employee_count}</td>
                     <td className="py-3 px-4 text-center">{branch.open_tasks}</td>
                     <td className="py-3 px-4 text-center">
-                      {branch.overdue_checklists > 0 ? (
+                      {Number(branch.overdue_checklists) > 0 ? (
                         <Badge variant="destructive">{branch.overdue_checklists}</Badge>
                       ) : (
                         <span className="text-green-600">0</span>
