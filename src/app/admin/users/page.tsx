@@ -57,7 +57,7 @@ export default function AdminUsersPage() {
       
       const { data: usersData } = await supabase
         .from("profiles")
-        .select("*, branch:branches!profiles_branch_id_fkey(name)")
+        .select("*, branch:branches!fk_profiles_branch(name)")
         .order("full_name")
       
       setUsers(usersData || [])

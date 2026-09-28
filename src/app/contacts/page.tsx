@@ -37,7 +37,7 @@ export default function ContactsPage() {
       // Fetch employees
       const { data: employeesData } = await supabase
         .from("profiles")
-        .select("*, branch:branches!profiles_branch_id_fkey(name)")
+        .select("*, branch:branches!fk_profiles_branch(name)")
         .eq("is_active", true)
         .order("full_name")
       

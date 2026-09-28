@@ -83,7 +83,7 @@ check("04: helpers inactive NULL", /AND is_active = true/.test(sec));
 check("04: attempt score/passed trigger", /prevent_attempt_score_tampering/.test(sec) && /score\/passed/.test(sec));
 
 const dashboardPage = read("src/app/dashboard/page.tsx");
-check("dashboard profiles branch explicit FK", /branch:branches!profiles_branch_id_fkey/.test(dashboardPage));
+check("dashboard profiles branch explicit FK", /branch:branches!fk_profiles_branch/.test(dashboardPage));
 
 if (failures.length > 0) {
   console.error(`\n${failures.length} check(s) failed`);
