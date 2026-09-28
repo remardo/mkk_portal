@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { Sidebar } from "@/components/sidebar"
+import { Button } from "@/components/ui/button"
+import { LogOut } from "lucide-react"
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -31,8 +33,13 @@ export default async function DashboardLayout({
         <Sidebar user={profile} />
       </aside>
       <main className="flex-1 overflow-auto">
-        <div className="md:hidden h-16 border-b flex items-center px-4">
+        <div className="md:hidden h-16 border-b flex items-center justify-between px-4">
           <span className="font-semibold">МКК ФК Портал</span>
+          <form action="/auth/signout" method="post">
+            <Button variant="ghost" size="icon" type="submit">
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </form>
         </div>
         <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">{children}</div>
       </main>
