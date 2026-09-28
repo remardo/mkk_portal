@@ -49,7 +49,6 @@ export default function ChecklistsPage() {
           checklist:checklists(title, type),
           branch:branches(name)
         `)
-        .eq("branch_id", profile.branch_id)
         .order("due_date", { ascending: true })
 
       // Батчинг: 2 запроса вместо N*2
