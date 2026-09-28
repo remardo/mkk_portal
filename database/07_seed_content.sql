@@ -33,8 +33,8 @@ DECLARE
     t_kyc    UUID;
     t_coll   UUID;
 
-    q UUID;
-    o UUID;
+    q1 UUID;
+    q2 UUID;
 BEGIN
 
     ------------------------------------------------------------------
