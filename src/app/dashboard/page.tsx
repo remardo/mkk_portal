@@ -32,7 +32,7 @@ export default async function DashboardPage() {
   // Get user profile with branch
   const { data: profile } = await supabase
     .from("profiles")
-    .select("*, branch:branches(*)")
+    .select("*, branch:branches!profiles_branch_id_fkey(*)")
     .eq("id", user.id)
     .single()
 
