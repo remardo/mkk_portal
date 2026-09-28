@@ -5,7 +5,7 @@
 -- --------------------------------------------
 -- 1. Общая статистика компании
 -- --------------------------------------------
-CREATE OR REPLACE VIEW v_company_stats AS
+CREATE OR REPLACE VIEW v_company_stats WITH (security_invoker=true) AS
 SELECT
     (SELECT COUNT(*) FROM profiles WHERE is_active = true) as active_employees,
     (SELECT COUNT(*) FROM branches WHERE is_active = true) as active_branches,
@@ -16,7 +16,7 @@ SELECT
 -- --------------------------------------------
 -- 2. Статистика по точкам
 -- --------------------------------------------
-CREATE OR REPLACE VIEW v_branch_stats AS
+CREATE OR REPLACE VIEW v_branch_stats WITH (security_invoker=true) AS
 SELECT 
     b.id as branch_id,
     b.name as branch_name,
@@ -39,7 +39,7 @@ GROUP BY b.id, b.name, b.city, b.region, bm.full_name;
 -- --------------------------------------------
 -- 3. Прогресс обучения по сотрудникам
 -- --------------------------------------------
-CREATE OR REPLACE VIEW v_employee_learning_stats AS
+CREATE OR REPLACE VIEW v_employee_learning_stats WITH (security_invoker=true) AS
 SELECT 
     p.id as user_id,
     p.full_name,
@@ -48,11 +48,11 @@ SELECT
     COUNT(DISTINCT c.id) FILTER (WHERE c.mandatory = true) as mandatory_courses_total,
     COUNT(DISTINCT cp.course_id) FILTER (WHERE cp.status = 'completed' AND c.mandatory = true) as mandatory_courses_completed,
     COUNT(DISTINCT t.id) FILTER (WHERE t.mandatory = true) as mandatory_tests_total,
-    COUNT(DISTINCT ta.id) FILTER (WHERE ta.passed = true AND t.mandatory = true) as mandatory_tests_passed,
+    COUNT(DISTINCT ta.test_id) FILTER (WHERE ta.passed = true AND t.mandatory = true) as mandatory_tests_passed,
     MAX(ta.finished_at) FILTER (WHERE ta.passed = true) as last_certification_date,
     CASE 
         WHEN COUNT(DISTINCT t.id) FILTER (WHERE t.mandatory = true) = 0 THEN true
-        WHEN COUNT(DISTINCT ta.id) FILTER (WHERE ta.passed = true AND t.mandatory = true AND 
+        WHEN COUNT(DISTINCT ta.test_id) FILTER (WHERE ta.passed = true AND t.mandatory = true AND 
             (t.period_days IS NULL OR ta.finished_at > NOW() - (t.period_days || ' days')::INTERVAL)
         ) = COUNT(DISTINCT t.id) FILTER (WHERE t.mandatory = true) THEN true
         ELSE false
@@ -60,12 +60,12 @@ SELECT
 FROM profiles p
 LEFT JOIN branches b ON b.id = p.branch_id
 LEFT JOIN courses c ON c.mandatory = true 
-    AND (array_length(c.visibility_roles, 1) = 0 OR p.role = ANY(c.visibility_roles))
-    AND (array_length(c.visibility_branch_ids, 1) = 0 OR p.branch_id = ANY(c.visibility_branch_ids))
+    AND (coalesce(cardinality(c.visibility_roles), 0) = 0 OR p.role = ANY(c.visibility_roles))
+    AND (coalesce(cardinality(c.visibility_branch_ids), 0) = 0 OR p.branch_id = ANY(c.visibility_branch_ids))
 LEFT JOIN course_progress cp ON cp.course_id = c.id AND cp.user_id = p.id
 LEFT JOIN tests t ON t.mandatory = true
-    AND (array_length(t.visibility_roles, 1) = 0 OR p.role = ANY(t.visibility_roles))
-    AND (array_length(t.visibility_branch_ids, 1) = 0 OR p.branch_id = ANY(t.visibility_branch_ids))
+    AND (coalesce(cardinality(t.visibility_roles), 0) = 0 OR p.role = ANY(t.visibility_roles))
+    AND (coalesce(cardinality(t.visibility_branch_ids), 0) = 0 OR p.branch_id = ANY(t.visibility_branch_ids))
 LEFT JOIN test_attempts ta ON ta.test_id = t.id AND ta.user_id = p.id AND ta.passed = true
 WHERE p.is_active = true
 GROUP BY p.id, p.full_name, p.role, b.name;
@@ -73,7 +73,7 @@ GROUP BY p.id, p.full_name, p.role, b.name;
 -- --------------------------------------------
 -- 4. Ознакомление с обязательными документами
 -- --------------------------------------------
-CREATE OR REPLACE VIEW v_document_acknowledgement_stats AS
+CREATE OR REPLACE VIEW v_document_acknowledgement_stats WITH (security_invoker=true) AS
 SELECT 
     d.id as document_id,
     d.title as document_title,
@@ -86,8 +86,8 @@ SELECT
     array_agg(DISTINCT CASE WHEN da.user_id IS NULL THEN p.full_name END) FILTER (WHERE da.user_id IS NULL) as not_acknowledged_employees
 FROM documents d
 LEFT JOIN profiles p ON p.is_active = true
-    AND (array_length(d.visibility_roles, 1) = 0 OR p.role = ANY(d.visibility_roles))
-    AND (array_length(d.visibility_branch_ids, 1) = 0 OR p.branch_id = ANY(d.visibility_branch_ids))
+    AND (coalesce(cardinality(d.visibility_roles), 0) = 0 OR p.role = ANY(d.visibility_roles))
+    AND (coalesce(cardinality(d.visibility_branch_ids), 0) = 0 OR p.branch_id = ANY(d.visibility_branch_ids))
 LEFT JOIN document_acknowledgements da ON da.document_id = d.id AND da.user_id = p.id
 WHERE d.mandatory = true
 GROUP BY d.id, d.title, d.version, d.effective_from, d.mandatory;
@@ -95,7 +95,7 @@ GROUP BY d.id, d.title, d.version, d.effective_from, d.mandatory;
 -- --------------------------------------------
 -- 5. Статистика задач по типам
 -- --------------------------------------------
-CREATE OR REPLACE VIEW v_tasks_by_type_stats AS
+CREATE OR REPLACE VIEW v_tasks_by_type_stats WITH (security_invoker=true) AS
 SELECT 
     type,
     priority,
@@ -109,7 +109,7 @@ GROUP BY type, priority, status;
 -- --------------------------------------------
 -- 6. Активность в портале (последние 30 дней)
 -- --------------------------------------------
-CREATE OR REPLACE VIEW v_portal_activity AS
+CREATE OR REPLACE VIEW v_portal_activity WITH (security_invoker=true) AS
 WITH daily_activity AS (
     SELECT 
         DATE(created_at) as date,
@@ -122,7 +122,7 @@ WITH daily_activity AS (
     UNION ALL
     
     SELECT 
-        DATE(created_at) as date,
+        DATE(completed_at) as date,
         'checklist_completed' as activity_type,
         COUNT(*) as count
     FROM checklist_runs
@@ -142,12 +142,12 @@ WITH daily_activity AS (
     UNION ALL
     
     SELECT 
-        DATE(read_at) as date,
+        DATE(acknowledged_at) as date,
         'document_acknowledged' as activity_type,
         COUNT(*) as count
     FROM document_acknowledgements
     WHERE acknowledged_at > NOW() - INTERVAL '30 days'
-    GROUP BY DATE(read_at)
+    GROUP BY DATE(acknowledged_at)
 )
 SELECT 
     date,
@@ -160,7 +160,7 @@ ORDER BY date DESC, activity_type;
 -- --------------------------------------------
 -- 7. Мои задачи (для текущего пользователя)
 -- --------------------------------------------
-CREATE OR REPLACE VIEW v_my_tasks AS
+CREATE OR REPLACE VIEW v_my_tasks WITH (security_invoker=true) AS
 SELECT 
     t.*,
     author.full_name as author_name,
@@ -179,7 +179,7 @@ WHERE t.status NOT IN ('done', 'rejected');
 -- --------------------------------------------
 -- 8. Мои чек-листы (для текущего пользователя)
 -- --------------------------------------------
-CREATE OR REPLACE VIEW v_my_checklists AS
+CREATE OR REPLACE VIEW v_my_checklists WITH (security_invoker=true) AS
 SELECT 
     cr.*,
     c.title as checklist_title,
@@ -201,7 +201,7 @@ GROUP BY cr.id, c.title, c.type, b.name;
 -- --------------------------------------------
 -- 9. Результаты тестов по пользователям
 -- --------------------------------------------
-CREATE OR REPLACE VIEW v_test_results_detailed AS
+CREATE OR REPLACE VIEW v_test_results_detailed WITH (security_invoker=true) AS
 SELECT 
     ta.id as attempt_id,
     t.id as test_id,
@@ -231,7 +231,7 @@ GROUP BY ta.id, t.id, t.title, t.mandatory, t.pass_score, p.id, p.full_name, b.n
 -- --------------------------------------------
 -- 10. Прочтение новостей
 -- --------------------------------------------
-CREATE OR REPLACE VIEW v_news_read_stats AS
+CREATE OR REPLACE VIEW v_news_read_stats WITH (security_invoker=true) AS
 SELECT 
     n.id as news_id,
     n.title,
@@ -248,7 +248,7 @@ GROUP BY n.id, n.title, n.type, n.published_at;
 -- --------------------------------------------
 -- 11. IT-статистика (время реакции/решения)
 -- --------------------------------------------
-CREATE OR REPLACE VIEW v_it_stats AS
+CREATE OR REPLACE VIEW v_it_stats WITH (security_invoker=true) AS
 SELECT 
     DATE_TRUNC('week', created_at) as week,
     COUNT(*) as total_tasks,
@@ -265,7 +265,7 @@ ORDER BY week DESC;
 -- --------------------------------------------
 -- 12. Прогресс по курсам (детально)
 -- --------------------------------------------
-CREATE OR REPLACE VIEW v_course_progress_detailed AS
+CREATE OR REPLACE VIEW v_course_progress_detailed WITH (security_invoker=true) AS
 SELECT 
     c.id as course_id,
     c.title as course_title,
@@ -287,14 +287,14 @@ LEFT JOIN course_progress cp ON cp.course_id = c.id AND cp.user_id = p.id
 LEFT JOIN branches b ON b.id = p.branch_id
 LEFT JOIN course_lessons cl ON cl.course_id = c.id
 WHERE p.is_active = true
-    AND (array_length(c.visibility_roles, 1) = 0 OR p.role = ANY(c.visibility_roles))
-    AND (array_length(c.visibility_branch_ids, 1) = 0 OR p.branch_id = ANY(c.visibility_branch_ids))
-GROUP BY c.id, c.title, c.mandatory, p.id, p.full_name, b.name, cp.status, cp.updated_at;
+    AND (coalesce(cardinality(c.visibility_roles), 0) = 0 OR p.role = ANY(c.visibility_roles))
+    AND (coalesce(cardinality(c.visibility_branch_ids), 0) = 0 OR p.branch_id = ANY(c.visibility_branch_ids))
+GROUP BY c.id, c.title, c.mandatory, p.id, p.full_name, b.name, cp.status, cp.updated_at, cp.last_lesson_id;
 
 -- --------------------------------------------
 -- 13. Сводка для директора
 -- --------------------------------------------
-CREATE OR REPLACE VIEW v_director_dashboard AS
+CREATE OR REPLACE VIEW v_director_dashboard WITH (security_invoker=true) AS
 SELECT
     -- Общие показатели
     (SELECT COUNT(*) FROM profiles WHERE is_active = true) as total_employees,
@@ -325,7 +325,7 @@ SELECT
 -- --------------------------------------------
 -- 14. Сводка для операционного руководителя
 -- --------------------------------------------
-CREATE OR REPLACE VIEW v_ops_manager_dashboard AS
+CREATE OR REPLACE VIEW v_ops_manager_dashboard WITH (security_invoker=true) AS
 SELECT 
     p.id as ops_manager_id,
     p.full_name as ops_manager_name,
@@ -348,7 +348,7 @@ GROUP BY p.id, p.full_name;
 -- --------------------------------------------
 -- 15. Непрочитанные новости для пользователя
 -- --------------------------------------------
-CREATE OR REPLACE VIEW v_unread_news AS
+CREATE OR REPLACE VIEW v_unread_news WITH (security_invoker=true) AS
 SELECT 
     n.*,
     p.id as current_user_id
@@ -356,8 +356,8 @@ FROM news n
 CROSS JOIN profiles p
 WHERE n.published_at IS NOT NULL
     AND n.published_at <= NOW()
-    AND (array_length(n.audience_roles, 1) = 0 OR p.role = ANY(n.audience_roles))
-    AND (array_length(n.audience_branch_ids, 1) = 0 OR p.branch_id = ANY(n.audience_branch_ids))
+    AND (coalesce(cardinality(n.audience_roles), 0) = 0 OR p.role = ANY(n.audience_roles))
+    AND (coalesce(cardinality(n.audience_branch_ids), 0) = 0 OR p.branch_id = ANY(n.audience_branch_ids))
     AND NOT EXISTS (
         SELECT 1 FROM news_reads nr 
         WHERE nr.news_id = n.id AND nr.user_id = p.id
@@ -387,7 +387,7 @@ RETURNS TABLE (
 BEGIN
     RETURN QUERY SELECT * FROM v_director_dashboard;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY INVOKER;
 
 -- Функция: получить статистику для ops_manager
 CREATE OR REPLACE FUNCTION get_ops_manager_dashboard(manager_id UUID)
@@ -407,7 +407,7 @@ BEGIN
     SELECT * FROM v_ops_manager_dashboard 
     WHERE v_ops_manager_dashboard.ops_manager_id = manager_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY INVOKER;
 
 -- Функция: получить мои задачи
 CREATE OR REPLACE FUNCTION get_my_tasks(user_id UUID, limit_count INTEGER DEFAULT 10)
@@ -430,14 +430,30 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
     RETURN QUERY 
-    SELECT v.* FROM v_my_tasks v
+    SELECT
+        v.id,
+        v.title,
+        v.description,
+        v.type,
+        v.priority,
+        v.status,
+        v.author_id,
+        v.assignee_id,
+        v.branch_id,
+        v.due_date,
+        v.created_at,
+        v.author_name,
+        v.assignee_name,
+        v.branch_name,
+        v.is_overdue
+    FROM v_my_tasks v
     WHERE v.assignee_id = user_id OR v.author_id = user_id
     ORDER BY 
         CASE WHEN v.is_overdue THEN 0 ELSE 1 END,
         v.due_date ASC NULLS LAST
     LIMIT limit_count;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY INVOKER;
 
 -- Функция: получить мои чек-листы
 CREATE OR REPLACE FUNCTION get_my_checklists(user_branch_id UUID, limit_count INTEGER DEFAULT 10)
@@ -459,14 +475,29 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
     RETURN QUERY 
-    SELECT v.* FROM v_my_checklists v
+    SELECT
+        v.id,
+        v.checklist_id,
+        v.branch_id,
+        v.due_date,
+        v.status,
+        v.created_by,
+        v.completed_at,
+        v.created_at,
+        v.checklist_title,
+        v.checklist_type,
+        v.branch_name,
+        v.total_items,
+        v.completed_items,
+        v.is_overdue
+    FROM v_my_checklists v
     WHERE v.branch_id = user_branch_id
     ORDER BY 
         CASE WHEN v.is_overdue THEN 0 ELSE 1 END,
         v.due_date ASC
     LIMIT limit_count;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY INVOKER;
 
 -- Функция: поиск по базе знаний (полнотекстовый)
 CREATE OR REPLACE FUNCTION search_knowledge(search_query TEXT)
@@ -499,4 +530,4 @@ BEGIN
     ORDER BY rank DESC
     LIMIT 20;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY INVOKER;

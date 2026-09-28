@@ -104,6 +104,9 @@ CREATE TYPE test_attempt_status AS ENUM (
 -- 2. ТАБЛИЦЫ
 -- ============================================
 
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "vector";
+
 -- --------------------------------------------
 -- 2.1 Профили пользователей (расширение auth.users)
 -- --------------------------------------------
@@ -168,6 +171,7 @@ CREATE TABLE knowledge_articles (
     category_id UUID REFERENCES knowledge_categories(id),
     title TEXT NOT NULL,
     content TEXT NOT NULL,
+    title_content TSVECTOR GENERATED ALWAYS AS (to_tsvector('russian', coalesce(title, '') || ' ' || coalesce(content, ''))) STORED,
     tags TEXT[] DEFAULT '{}',
     status article_status NOT NULL DEFAULT 'draft',
     visibility_roles user_role[] DEFAULT '{}',
@@ -569,6 +573,7 @@ CREATE INDEX idx_branches_region ON branches(region);
 CREATE INDEX idx_articles_category ON knowledge_articles(category_id);
 CREATE INDEX idx_articles_status ON knowledge_articles(status);
 CREATE INDEX idx_articles_created_by ON knowledge_articles(created_by);
+CREATE INDEX idx_articles_title_content ON knowledge_articles USING GIN (title_content);
 
 -- Документы
 CREATE INDEX idx_documents_category ON documents(category_id);
@@ -677,6 +682,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Функция для автоматического создания профиля при регистрации
+-- Всегда назначает роль agent, игнорируя metadata.role (повышение только через админа)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -685,7 +691,7 @@ BEGIN
         NEW.id,
         COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
         NEW.email,
-        COALESCE((NEW.raw_user_meta_data->>'role')::user_role, 'agent'),
+        'agent',
         true
     );
     RETURN NEW;

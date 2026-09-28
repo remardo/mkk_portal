@@ -31,29 +31,32 @@ ALTER TABLE chat_channels ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_index ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE system_settings ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
 -- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 -- ============================================
 
 -- Функция для получения роли текущего пользователя
+-- Возвращает NULL для неактивных пользователей
 CREATE OR REPLACE FUNCTION get_current_user_role()
 RETURNS user_role AS $$
 DECLARE
     user_role_val user_role;
 BEGIN
-    SELECT role INTO user_role_val FROM profiles WHERE id = auth.uid();
+    SELECT role INTO user_role_val FROM profiles WHERE id = auth.uid() AND is_active = true;
     RETURN user_role_val;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Функция для получения branch_id текущего пользователя
+-- Возвращает NULL для неактивных пользователей
 CREATE OR REPLACE FUNCTION get_current_user_branch()
 RETURNS UUID AS $$
 DECLARE
     branch_val UUID;
 BEGIN
-    SELECT branch_id INTO branch_val FROM profiles WHERE id = auth.uid();
+    SELECT branch_id INTO branch_val FROM profiles WHERE id = auth.uid() AND is_active = true;
     RETURN branch_val;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -68,14 +71,14 @@ BEGIN
         AND ops_manager_id = auth.uid()
     );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Функция для проверки видимости по ролям
 CREATE OR REPLACE FUNCTION is_visible_by_roles(allowed_roles user_role[])
 RETURNS BOOLEAN AS $$
 BEGIN
     -- Если массив пустой - видно всем
-    IF array_length(allowed_roles, 1) IS NULL OR array_length(allowed_roles, 1) = 0 THEN
+    IF coalesce(cardinality(allowed_roles), 0) = 0 THEN
         RETURN true;
     END IF;
     -- Проверяем, есть ли роль пользователя в массиве
@@ -92,9 +95,7 @@ CREATE POLICY "profiles_select" ON profiles
     FOR SELECT USING (
         id = auth.uid()  -- себя
         OR get_current_user_role() IN ('director', 'it_admin')  -- директор и админ видят всех
-        OR (get_current_user_role() = 'ops_manager' AND branch_id IN (
-            SELECT id FROM branches WHERE ops_manager_id = auth.uid()
-        ))  -- ops_manager видит сотрудников своих точек
+        OR (get_current_user_role() = 'ops_manager' AND is_ops_manager_for_branch(branch_id))  -- ops_manager видит сотрудников своих точек
         OR (get_current_user_role() = 'branch_manager' AND branch_id = get_current_user_branch())
     );
 
@@ -109,9 +110,7 @@ CREATE POLICY "profiles_update" ON profiles
     FOR UPDATE USING (
         id = auth.uid()
         OR get_current_user_role() = 'it_admin'
-        OR (get_current_user_role() = 'ops_manager' AND branch_id IN (
-            SELECT id FROM branches WHERE ops_manager_id = auth.uid()
-        ))
+        OR (get_current_user_role() = 'ops_manager' AND is_ops_manager_for_branch(branch_id))
     );
 
 -- DELETE: только it_admin
@@ -145,8 +144,7 @@ CREATE POLICY "articles_select" ON knowledge_articles
     FOR SELECT USING (
         status = 'published'
         AND is_visible_by_roles(visibility_roles)
-        AND (array_length(visibility_branch_ids, 1) IS NULL 
-             OR array_length(visibility_branch_ids, 1) = 0
+        AND (coalesce(cardinality(visibility_branch_ids), 0) = 0
              OR get_current_user_branch() = ANY(visibility_branch_ids))
         OR created_by = auth.uid()  -- автор видит свои черновики
         OR get_current_user_role() IN ('it_admin', 'director')
@@ -179,8 +177,7 @@ CREATE POLICY "categories_modify" ON knowledge_categories
 CREATE POLICY "documents_select" ON documents
     FOR SELECT USING (
         is_visible_by_roles(visibility_roles)
-        AND (array_length(visibility_branch_ids, 1) IS NULL 
-             OR array_length(visibility_branch_ids, 1) = 0
+        AND (coalesce(cardinality(visibility_branch_ids), 0) = 0
              OR get_current_user_branch() = ANY(visibility_branch_ids))
         OR get_current_user_role() IN ('it_admin', 'director')
     );
@@ -222,8 +219,7 @@ CREATE POLICY "ack_modify" ON document_acknowledgements
 CREATE POLICY "courses_select" ON courses
     FOR SELECT USING (
         is_visible_by_roles(visibility_roles)
-        AND (array_length(visibility_branch_ids, 1) IS NULL 
-             OR array_length(visibility_branch_ids, 1) = 0
+        AND (coalesce(cardinality(visibility_branch_ids), 0) = 0
              OR get_current_user_branch() = ANY(visibility_branch_ids))
         OR get_current_user_role() IN ('it_admin', 'director', 'ops_manager')
     );
@@ -246,8 +242,7 @@ CREATE POLICY "lessons_select" ON course_lessons
             WHERE id = course_lessons.course_id
             AND (
                 is_visible_by_roles(visibility_roles)
-                AND (array_length(visibility_branch_ids, 1) IS NULL 
-                     OR array_length(visibility_branch_ids, 1) = 0
+                AND (coalesce(cardinality(visibility_branch_ids), 0) = 0
                      OR get_current_user_branch() = ANY(visibility_branch_ids))
                 OR get_current_user_role() IN ('it_admin', 'director', 'ops_manager')
             )
@@ -291,8 +286,7 @@ CREATE POLICY "progress_modify" ON course_progress
 CREATE POLICY "tests_select" ON tests
     FOR SELECT USING (
         is_visible_by_roles(visibility_roles)
-        AND (array_length(visibility_branch_ids, 1) IS NULL 
-             OR array_length(visibility_branch_ids, 1) = 0
+        AND (coalesce(cardinality(visibility_branch_ids), 0) = 0
              OR get_current_user_branch() = ANY(visibility_branch_ids))
         OR get_current_user_role() IN ('it_admin', 'director', 'ops_manager')
     );
@@ -405,8 +399,7 @@ CREATE POLICY "attempt_answers_modify" ON test_attempt_answers
 CREATE POLICY "checklists_select" ON checklists
     FOR SELECT USING (
         is_visible_by_roles(applicable_roles)
-        AND (array_length(applicable_branch_ids, 1) IS NULL 
-             OR array_length(applicable_branch_ids, 1) = 0
+        AND (coalesce(cardinality(applicable_branch_ids), 0) = 0
              OR get_current_user_branch() = ANY(applicable_branch_ids))
         OR get_current_user_role() IN ('it_admin', 'director', 'ops_manager')
     );
@@ -596,8 +589,7 @@ CREATE POLICY "task_attachments_insert" ON task_attachments
 CREATE POLICY "news_select" ON news
     FOR SELECT USING (
         is_visible_by_roles(audience_roles)
-        AND (array_length(audience_branch_ids, 1) IS NULL 
-             OR array_length(audience_branch_ids, 1) = 0
+        AND (coalesce(cardinality(audience_branch_ids), 0) = 0
              OR get_current_user_branch() = ANY(audience_branch_ids))
         OR get_current_user_role() IN ('it_admin', 'director')
     );
@@ -630,8 +622,7 @@ CREATE POLICY "news_reads_insert" ON news_reads
 CREATE POLICY "chat_channels_select" ON chat_channels
     FOR SELECT USING (
         is_visible_by_roles(visibility_roles)
-        OR array_length(visibility_roles, 1) IS NULL
-        OR array_length(visibility_roles, 1) = 0
+        OR coalesce(cardinality(visibility_roles), 0) = 0
     );
 
 CREATE POLICY "chat_channels_modify" ON chat_channels
@@ -650,8 +641,7 @@ CREATE POLICY "chat_messages_select" ON chat_messages
             WHERE id = chat_messages.channel_id
             AND (
                 is_visible_by_roles(visibility_roles)
-                OR array_length(visibility_roles, 1) IS NULL
-                OR array_length(visibility_roles, 1) = 0
+                OR coalesce(cardinality(visibility_roles), 0) = 0
             )
         )
     );
@@ -664,8 +654,7 @@ CREATE POLICY "chat_messages_insert" ON chat_messages
             WHERE id = chat_messages.channel_id
             AND (
                 is_visible_by_roles(visibility_roles)
-                OR array_length(visibility_roles, 1) IS NULL
-                OR array_length(visibility_roles, 1) = 0
+                OR coalesce(cardinality(visibility_roles), 0) = 0
             )
         )
     );
@@ -678,8 +667,7 @@ CREATE POLICY "chat_messages_insert" ON chat_messages
 CREATE POLICY "ai_index_select" ON ai_index
     FOR SELECT USING (
         is_visible_by_roles(visibility_roles)
-        AND (array_length(visibility_branch_ids, 1) IS NULL 
-             OR array_length(visibility_branch_ids, 1) = 0
+        AND (coalesce(cardinality(visibility_branch_ids), 0) = 0
              OR get_current_user_branch() = ANY(visibility_branch_ids))
         OR get_current_user_role() = 'it_admin'
     );
@@ -703,13 +691,29 @@ CREATE POLICY "audit_logs_insert" ON audit_logs
     FOR INSERT WITH CHECK (true); -- разрешаем всем вставку (через триггеры)
 
 -- ============================================
--- SYSTEM_SETTINGS - Настройки системы
+-- SYSTEM_SETTINGS - Настройки системы (только админ)
 -- ============================================
 
 CREATE POLICY "settings_select" ON system_settings
-    FOR SELECT USING (true);
+    FOR SELECT USING (
+        get_current_user_role() = 'it_admin'
+    );
 
 CREATE POLICY "settings_modify" ON system_settings
+    FOR ALL USING (
+        get_current_user_role() = 'it_admin'
+    );
+
+-- ============================================
+-- DOCUMENT_CATEGORIES - Категории документов
+-- ============================================
+
+CREATE POLICY "document_categories_select" ON document_categories
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_active = true)
+    );
+
+CREATE POLICY "document_categories_modify" ON document_categories
     FOR ALL USING (
         get_current_user_role() = 'it_admin'
     );

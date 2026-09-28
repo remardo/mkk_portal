@@ -12,7 +12,7 @@ import { toast } from "sonner"
 import Link from "next/link"
 import { ClipboardCheck, CheckCircle, Clock, AlertCircle, Camera, ChevronRight } from "lucide-react"
 import { formatDate, getStatusColor, getChecklistStatusLabel, isOverdue } from "@/lib/utils"
-import { ChecklistRunWithDetails, ChecklistItem, ChecklistRunItem } from "@/types/database"
+import { ChecklistRunWithDetails } from "@/types/database"
 
 export default function ChecklistsPage() {
   const [checklists, setChecklists] = useState<ChecklistRunWithDetails[]>([])
@@ -38,6 +38,7 @@ export default function ChecklistsPage() {
         .eq("id", user.id)
         .single()
       
+      if (!profile) return
       setCurrentUser(profile)
       
       // Fetch checklists for user's branch
@@ -110,7 +111,16 @@ export default function ChecklistsPage() {
         if (cl.id === runId) {
           const newItems = cl.items?.map(item => {
             if (item.id === itemId) {
-              return { ...item, runItem: { ...item.runItem, checked } }
+              const updatedRunItem = item.runItem
+                ? { ...item.runItem, checked }
+                : {
+                    id: crypto.randomUUID(),
+                    run_id: runId,
+                    item_id: itemId,
+                    checked,
+                    updated_at: new Date().toISOString(),
+                  }
+              return { ...item, runItem: updatedRunItem }
             }
             return item
           })
@@ -155,8 +165,10 @@ export default function ChecklistsPage() {
   const completedChecklists = checklists.filter(c => c.status === "completed")
 
   const ChecklistCard = ({ checklist }: { checklist: ChecklistRunWithDetails }) => {
-    const progress = checklist.total_items 
-      ? Math.round((checklist.completed_items / checklist.total_items) * 100) 
+    const completedItems = checklist.completed_items || 0
+    const totalItems = checklist.total_items || 0
+    const progress = totalItems 
+      ? Math.round((completedItems / totalItems) * 100) 
       : 0
     
     return (

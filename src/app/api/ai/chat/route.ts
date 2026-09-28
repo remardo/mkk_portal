@@ -2,14 +2,25 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import OpenAI from "openai"
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+type ChatHistoryItem = {
+  role: "user" | "assistant"
+  content: string
+}
+
+function isValidHistoryItem(item: unknown): item is ChatHistoryItem {
+  if (typeof item !== "object" || item === null) return false
+  const h = item as Record<string, unknown>
+  return (
+    (h.role === "user" || h.role === "assistant") &&
+    typeof h.content === "string" &&
+    h.content.length <= 4000
+  )
+}
 
 export async function POST(req: NextRequest) {
   try {
     const supabase = createClient()
-    
+
     // Check authentication
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
@@ -27,11 +38,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 })
     }
 
-    const { message, history } = await req.json()
+    const body = await req.json()
+    const { message, history = [] } = body ?? {}
 
-    if (!message) {
+    if (typeof message !== "string" || message.trim().length === 0) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 })
     }
+    if (message.length > 4000) {
+      return NextResponse.json({ error: "Message too long (max 4000)" }, { status: 400 })
+    }
+    if (!Array.isArray(history) || history.length > 5) {
+      return NextResponse.json({ error: "History must be an array with max 5 items" }, { status: 400 })
+    }
+    if (!history.every(isValidHistoryItem)) {
+      return NextResponse.json(
+        { error: "History items must have role user|assistant and string content" },
+        { status: 400 }
+      )
+    }
+    const validHistory = history as ChatHistoryItem[]
+
+    const apiKey = process.env.OPENAI_API_KEY
+    if (!apiKey) {
+      return NextResponse.json({ error: "AI service not configured" }, { status: 503 })
+    }
+    const openai = new OpenAI({ apiKey })
 
     // Generate embedding for the query
     const embeddingResponse = await openai.embeddings.create({
@@ -64,7 +95,7 @@ export async function POST(req: NextRequest) {
         type: doc.source_type,
       }))
     } else {
-      // Fallback to text search
+      // Fallback to text search on the generated tsvector column title_content
       const { data: articles } = await supabase
         .from("knowledge_articles")
         .select("id, title, content")
@@ -105,7 +136,7 @@ ${context || "Контекст не найден"}`
       model: process.env.OPENAI_MODEL || "gpt-4o-mini",
       messages: [
         { role: "system", content: systemPrompt },
-        ...history.slice(-5).map((h: any) => ({ role: h.role, content: h.content })),
+        ...validHistory.map((h) => ({ role: h.role, content: h.content })),
         { role: "user", content: message },
       ],
       temperature: 0.3,

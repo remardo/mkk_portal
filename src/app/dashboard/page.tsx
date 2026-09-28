@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import Link from "next/link"
 import {
   CheckSquare,
+  ClipboardCheck,
   GraduationCap,
   FileText,
   Bell,
@@ -39,7 +40,32 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
+  // Fetch current user read/ack IDs first: news/documents tables
+  // have no news_reads / document_acknowledgements columns.
+  const [{ data: readRows }, { data: ackRows }] = await Promise.all([
+    supabase.from("news_reads").select("news_id").eq("user_id", user.id),
+    supabase.from("document_acknowledgements").select("document_id").eq("user_id", user.id),
+  ])
+  const readIds = [...new Set((readRows ?? []).map((r) => r.news_id).filter(Boolean))]
+  const ackIds = [...new Set((ackRows ?? []).map((r) => r.document_id).filter(Boolean))]
+  const readList = readIds.length > 0 ? `(${readIds.join(",")})` : null
+  const ackList = ackIds.length > 0 ? `(${ackIds.join(",")})` : null
+
   // Fetch dashboard data in parallel
+  const newsQuery = supabase
+    .from("news")
+    .select("*")
+    .lte("published_at", new Date().toISOString())
+    .order("published_at", { ascending: false })
+    .limit(5)
+  const docsQuery = supabase
+    .from("documents")
+    .select("*")
+    .eq("mandatory", true)
+    .limit(5)
+  const filteredNewsQuery = readList ? newsQuery.not("id", "in", readList) : newsQuery
+  const filteredDocsQuery = ackList ? docsQuery.not("id", "in", ackList) : docsQuery
+
   const [
     { data: myTasks },
     { data: myChecklists },
@@ -73,22 +99,11 @@ export default async function DashboardPage() {
       .eq("status", "in_progress")
       .limit(3),
     
-    // Unread news
-    supabase
-      .from("news")
-      .select("*")
-      .not("news_reads", "cs", `{${user.id}}`)
-      .lte("published_at", new Date().toISOString())
-      .order("published_at", { ascending: false })
-      .limit(5),
+    // Unread news (exclude IDs already read by this user)
+    filteredNewsQuery,
     
-    // Mandatory documents not acknowledged
-    supabase
-      .from("documents")
-      .select("*")
-      .eq("mandatory", true)
-      .not("document_acknowledgements", "cs", `{${user.id}}`)
-      .limit(5),
+    // Mandatory documents not acknowledged (exclude IDs already acked)
+    filteredDocsQuery,
   ])
 
   const isOverdue = (dueDate: string | null, status: string) => {

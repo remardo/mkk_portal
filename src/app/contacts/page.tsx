@@ -7,12 +7,12 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Search, Building2, MapPin, Phone, Clock, Users, Mail } from "lucide-react"
-import { BranchWithManager, Profile } from "@/types/database"
+import { BranchWithManager, ProfileWithBranch } from "@/types/database"
 import { getRoleLabel } from "@/lib/utils"
 
 export default function ContactsPage() {
   const [branches, setBranches] = useState<BranchWithManager[]>([])
-  const [employees, setEmployees] = useState<Profile[]>([])
+  const [employees, setEmployees] = useState<ProfileWithBranch[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const supabase = createClient()
@@ -75,7 +75,7 @@ export default function ContactsPage() {
     if (!acc[role]) acc[role] = []
     acc[role].push(emp)
     return acc
-  }, {} as Record<string, Profile[]>)
+  }, {} as Record<string, ProfileWithBranch[]>)
 
   return (
     <div className="space-y-6">

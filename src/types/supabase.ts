@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Database {
+export interface DatabaseGenerated {
   public: {
     Tables: {
       profiles: {
@@ -1253,5 +1253,24 @@ export interface Database {
     Enums: {
       [_ in never]: never
     }
+  }
+}
+
+type TablesWithRelationships = {
+  [K in keyof DatabaseGenerated["public"]["Tables"]]: DatabaseGenerated["public"]["Tables"][K] & {
+    Relationships: []
+  }
+}
+
+type ViewsWithRelationships = {
+  [K in keyof DatabaseGenerated["public"]["Views"]]: DatabaseGenerated["public"]["Views"][K] & {
+    Relationships: []
+  }
+}
+
+export type Database = {
+  public: Omit<DatabaseGenerated["public"], "Tables" | "Views"> & {
+    Tables: TablesWithRelationships
+    Views: ViewsWithRelationships
   }
 }

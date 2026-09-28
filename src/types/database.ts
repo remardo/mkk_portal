@@ -179,6 +179,7 @@ export interface CourseWithProgress extends Course {
   lessons?: CourseLesson[];
   progress?: CourseProgress;
   progress_percent?: number;
+  total_lessons?: number;
 }
 
 // --------------------------------------------
@@ -294,7 +295,7 @@ export interface ChecklistRunItem {
 export interface ChecklistRunWithDetails extends ChecklistRun {
   checklist?: Checklist;
   branch?: Branch;
-  items?: (ChecklistRunItem & { item?: ChecklistItem })[];
+  items?: (ChecklistItem & { runItem?: ChecklistRunItem })[];
   total_items?: number;
   completed_items?: number;
   is_overdue?: boolean;
@@ -371,6 +372,7 @@ export interface NewsRead {
 export interface NewsWithRead extends News {
   is_read?: boolean;
   read_count?: number;
+  created_by_profile?: Profile;
 }
 
 // --------------------------------------------
