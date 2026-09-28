@@ -2,11 +2,8 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
-import { getRoleLabel } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
+import { cn, getRoleLabel } from "@/lib/utils"
 import {
   Building2,
   BookOpen,
@@ -26,9 +23,10 @@ import { Profile } from "@/types/database"
 
 interface SidebarProps {
   user: Profile | null
+  onNavigate?: () => void
 }
 
-const navigation = [
+export const navigation = [
   { name: "Главная", href: "/dashboard", icon: LayoutDashboard },
   { name: "База знаний", href: "/knowledge", icon: BookOpen },
   { name: "Документы", href: "/documents", icon: FileText },
@@ -38,103 +36,124 @@ const navigation = [
   { name: "Новости", href: "/news", icon: Bell },
   { name: "Чат", href: "/chat", icon: MessageSquare },
   { name: "Контакты", href: "/contacts", icon: Users },
+  { name: "ИИ-помощник", href: "/ai-assistant", icon: Bot },
 ]
 
-const adminNavigation = [
+export const adminNavigation = [
   { name: "Админка", href: "/admin", icon: Settings },
 ]
 
-export function Sidebar({ user }: SidebarProps) {
-  const pathname = usePathname()
+function initials(name?: string | null) {
+  return (name || "?")
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
+}
 
+export function Sidebar({ user, onNavigate }: SidebarProps) {
+  const pathname = usePathname()
   const isAdmin = user?.role === "it_admin" || user?.role === "director"
+  const userName = user?.full_name || "Сотрудник"
+  const userRole = user?.role ? getRoleLabel(user.role) : "—"
 
   return (
-    <div className="flex h-full flex-col border-r bg-card">
+    <div className="flex h-full flex-col bg-slate-950 text-slate-300">
       {/* Logo */}
-      <div className="flex h-16 items-center border-b px-6">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="bg-primary p-2 rounded-lg">
-            <Building2 className="h-5 w-5 text-primary-foreground" />
+      <div className="flex h-16 items-center gap-3 px-5">
+        <Link href="/dashboard" onClick={onNavigate} className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 shadow-lg shadow-blue-900/40">
+            <Building2 className="h-5 w-5 text-white" />
           </div>
-          <span className="font-semibold text-lg">МКК ФК</span>
+          <div className="leading-tight">
+            <p className="text-[15px] font-semibold text-white">МКК ФК</p>
+            <p className="text-[11px] text-slate-500">Корпоративный портал</p>
+          </div>
         </Link>
       </div>
 
-      {/* Navigation */}
-      <ScrollArea className="flex-1 px-4 py-4">
-        <nav className="flex flex-col gap-1">
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
+        <p className="px-3 pb-2 text-[11px] font-medium uppercase tracking-wider text-slate-600">
+          Разделы
+        </p>
+        <div className="space-y-1">
           {navigation.map((item) => {
             const Icon = item.icon
-            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
-            
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
             return (
-              <Link key={item.name} href={item.href}>
-                <Button
-                  variant={isActive ? "secondary" : "ghost"}
-                  className={cn(
-                    "w-full justify-start gap-3",
-                    isActive && "bg-secondary"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.name}
-                </Button>
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onNavigate}
+                className={cn(
+                  "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
+                  isActive
+                    ? "bg-blue-600 font-medium text-white shadow-lg shadow-blue-950/50"
+                    : "text-slate-400 hover:bg-white/5 hover:text-white"
+                )}
+              >
+                <Icon className={cn("h-[18px] w-[18px]", isActive ? "text-white" : "text-slate-500 group-hover:text-slate-300")} />
+                {item.name}
               </Link>
             )
           })}
+        </div>
 
-          {isAdmin && (
-            <>
-              <Separator className="my-4" />
-              <span className="px-3 text-xs font-medium text-muted-foreground mb-2">
-                Администрирование
-              </span>
+        {isAdmin && (
+          <div className="mt-6">
+            <p className="px-3 pb-2 text-[11px] font-medium uppercase tracking-wider text-slate-600">
+              Управление
+            </p>
+            <div className="space-y-1">
               {adminNavigation.map((item) => {
                 const Icon = item.icon
-                const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
-                
+                const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
                 return (
-                  <Link key={item.name} href={item.href}>
-                    <Button
-                      variant={isActive ? "secondary" : "ghost"}
-                      className={cn(
-                        "w-full justify-start gap-3",
-                        isActive && "bg-secondary"
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {item.name}
-                    </Button>
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onNavigate}
+                    className={cn(
+                      "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
+                      isActive
+                        ? "bg-blue-600 font-medium text-white shadow-lg shadow-blue-950/50"
+                        : "text-slate-400 hover:bg-white/5 hover:text-white"
+                    )}
+                  >
+                    <Icon className={cn("h-[18px] w-[18px]", isActive ? "text-white" : "text-slate-500 group-hover:text-slate-300")} />
+                    {item.name}
                   </Link>
                 )
               })}
-            </>
-          )}
-        </nav>
-      </ScrollArea>
+            </div>
+          </div>
+        )}
+      </nav>
 
-      {/* User & Logout */}
-      <div className="border-t p-4">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <span className="text-sm font-medium text-primary">
-              {user?.full_name?.split(" ").map(n => n[0]).join("").toUpperCase() || "??"}
-            </span>
+      {/* User */}
+      <div className="border-t border-white/5 p-3">
+        <div className="mb-3 flex items-center gap-3 rounded-lg bg-white/5 p-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-[12px] font-semibold text-white">
+            {initials(userName)}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{user?.full_name}</p>
-            <p className="text-xs text-muted-foreground truncate">
-              {user?.role && getRoleLabel(user.role)}
-            </p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-white">{userName}</p>
+            <p className="truncate text-[11px] text-slate-500">{userRole}</p>
           </div>
+          <form action="/auth/signout" method="post">
+            <Button
+              variant="ghost"
+              size="icon"
+              type="submit"
+              title="Выйти"
+              className="h-8 w-8 text-slate-500 hover:bg-white/10 hover:text-white"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </form>
         </div>
-        <form action="/auth/signout" method="post">
-          <Button variant="outline" className="w-full justify-start gap-2" type="submit">
-            <LogOut className="h-4 w-4" />
-            Выйти
-          </Button>
-        </form>
       </div>
     </div>
   )
