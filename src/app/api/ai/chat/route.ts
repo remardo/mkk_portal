@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
       const queryEmbedding = embeddingResponse.data[0].embedding
       const { data } = await supabase.rpc("match_documents" as never, {
         query_embedding: queryEmbedding,
-        match_threshold: 0.7,
+        match_threshold: Number(process.env.AI_MATCH_THRESHOLD || 0.45),
         match_count: 5,
         user_role: profile.role,
         user_branch_id: profile.branch_id,
