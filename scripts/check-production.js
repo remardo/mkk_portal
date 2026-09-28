@@ -32,11 +32,11 @@ const homePage = read("src/app/page.tsx");
 check("root page redirects /dashboard", /redirect\(["']\/dashboard["']\)/.test(homePage));
 
 const pkg = JSON.parse(read("package.json"));
-check("next pinned 14.2.x", /^14\.2\.\d+$/.test(pkg.dependencies.next));
-check("eslint-config-next pinned 14.2.x", /^14\.2\.\d+$/.test(pkg.devDependencies["eslint-config-next"]));
-check("next is latest patched 14.2.35", pkg.dependencies.next === "14.2.35" && pkg.devDependencies["eslint-config-next"] === "14.2.35");
+check("next pinned 15.5.x", /^15\.5\.\d+$/.test(pkg.dependencies.next));
+check("eslint-config-next pinned 15.5.x", /^15\.5\.\d+$/.test(pkg.devDependencies["eslint-config-next"]));
+check("next is latest patched 15.5.26", pkg.dependencies.next === "15.5.26" && pkg.devDependencies["eslint-config-next"] === "15.5.26");
 const lock = JSON.parse(read("package-lock.json"));
-check("lockfile next 14.2.35", lock.packages?.["node_modules/next"]?.version === "14.2.35");
+check("lockfile next 15.5.26", lock.packages?.["node_modules/next"]?.version === "15.5.26");
 
 // ---- AI route ----
 const aiRoute = read("src/app/api/ai/chat/route.ts");

@@ -21,7 +21,7 @@ import {
 import { formatDate, formatRelativeTime, getStatusColor, getPriorityColor, getRoleLabel } from "@/lib/utils"
 
 export default async function DashboardPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
 

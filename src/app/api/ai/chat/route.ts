@@ -19,7 +19,7 @@ function isValidHistoryItem(item: unknown): item is ChatHistoryItem {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Check authentication
     const { data: { user } } = await supabase.auth.getUser()

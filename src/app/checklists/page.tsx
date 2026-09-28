@@ -167,8 +167,8 @@ export default function ChecklistsPage() {
   const ChecklistCard = ({ checklist }: { checklist: ChecklistRunWithDetails }) => {
     const completedItems = checklist.completed_items || 0
     const totalItems = checklist.total_items || 0
-    const progress = totalItems 
-      ? Math.round((completedItems / totalItems) * 100) 
+    const progress = totalItems
+      ? Math.round((completedItems / totalItems) * 100)
       : 0
     
     return (
