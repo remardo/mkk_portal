@@ -152,51 +152,16 @@ Runtime-секреты не входят в образ и задаются ок�
 Для работы ИИ-помощника необходимо:
 
 1. Указать `OPENAI_API_KEY` в переменных окружения
-2. Создать функцию `match_documents` в Supabase:
+2. Функция `match_documents` и категории/статьи/курсы/тесты/новости создаются миграцией `07_seed_content.sql` (запускать после 01..06):
 
-```sql
-CREATE OR REPLACE FUNCTION match_documents(
-  query_embedding VECTOR(1536),
-  match_threshold FLOAT,
-  match_count INT,
-  user_role user_role,
-  user_branch_id UUID
-)
-RETURNS TABLE (
-  id UUID,
-  source_type TEXT,
-  source_id UUID,
-  content TEXT,
-  title TEXT,
-  similarity FLOAT
-) AS $$
-BEGIN
-  RETURN QUERY
-  SELECT
-    ai_index.id,
-    ai_index.source_type,
-    ai_index.source_id,
-    ai_index.content,
-    knowledge_articles.title,
-    1 - (ai_index.embedding <=> query_embedding) AS similarity
-  FROM ai_index
-  LEFT JOIN knowledge_articles ON knowledge_articles.id = ai_index.source_id
-  WHERE 1 - (ai_index.embedding <=> query_embedding) > match_threshold
-    AND (
-      array_length(ai_index.visibility_roles, 1) IS NULL
-      OR array_length(ai_index.visibility_roles, 1) = 0
-      OR user_role = ANY(ai_index.visibility_roles)
-    )
-    AND (
-      array_length(ai_index.visibility_branch_ids, 1) IS NULL
-      OR array_length(ai_index.visibility_branch_ids, 1) = 0
-      OR user_branch_id = ANY(ai_index.visibility_branch_ids)
-    )
-  ORDER BY ai_index.embedding <=> query_embedding
-  LIMIT match_count;
-END;
-$$ LANGUAGE plpgsql;
+```bash
+psql "$SUPABASE_DB_URL" -f database/07_seed_content.sql
 ```
+
+Идемпотентна: повторный запуск данных не дублирует. Требование: в `profiles`
+уже есть минимум один активный профиль (автор контента). Офисы создаются без
+`ops_manager_id` — создай операционных менеджеров через «Админка -> Пользователи»
+и привяжи их SQL-запросом-образцом из блока 11 миграции.
 
 ### Генерация эмбеддингов
 
