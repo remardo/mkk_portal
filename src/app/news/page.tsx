@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -15,13 +15,9 @@ export default function NewsPage() {
   const [news, setNews] = useState<NewsWithRead[]>([])
   const [readNewsIds, setReadNewsIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       
@@ -58,7 +54,11 @@ export default function NewsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const handleMarkAsRead = async (newsId: string) => {
     try {

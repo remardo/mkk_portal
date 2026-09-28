@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -34,41 +34,9 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
-  useEffect(() => {
-    checkAccess()
-  }, [])
-
-  const checkAccess = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push("/login")
-        return
-      }
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single() as { data: Profile | null }
-
-      if (profile?.role !== "it_admin" && profile?.role !== "director") {
-        router.push("/dashboard")
-        toast.error("У вас нет доступа к этой странице")
-        return
-      }
-
-      setIsAdmin(true)
-      fetchStats()
-    } catch (error) {
-      console.error("Error checking access:", error)
-      toast.error("Ошибка проверки доступа")
-    }
-  }
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       setLoading(true)
       
@@ -103,7 +71,39 @@ export default function AdminPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase])
+
+  const checkAccess = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push("/login")
+        return
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single() as { data: Profile | null }
+
+      if (profile?.role !== "it_admin" && profile?.role !== "director") {
+        router.push("/dashboard")
+        toast.error("У вас нет доступа к этой странице")
+        return
+      }
+
+      setIsAdmin(true)
+      fetchStats()
+    } catch (error) {
+      console.error("Error checking access:", error)
+      toast.error("Ошибка проверки доступа")
+    }
+  }, [supabase, router, fetchStats])
+
+  useEffect(() => {
+    checkAccess()
+  }, [checkAccess])
 
   if (!isAdmin) {
     return (

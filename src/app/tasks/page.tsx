@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -26,7 +26,7 @@ export default function TasksPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [currentUser, setCurrentUser] = useState<Profile | null>(null)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   // Form state
   const [newTask, setNewTask] = useState({
@@ -39,11 +39,7 @@ export default function TasksPage() {
     due_date: "",
   })
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       
@@ -53,7 +49,7 @@ export default function TasksPage() {
         toast.error("Сессия истекла, войдите снова")
         return
       }
-      
+
       const { data: profile } = await supabase
         .from("profiles")
         .select("*")
@@ -93,7 +89,11 @@ export default function TasksPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const handleCreateTask = async () => {
     try {

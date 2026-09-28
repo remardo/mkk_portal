@@ -18,7 +18,7 @@
 
 ## Технологический стек
 
-- **Frontend**: Next.js 14 (App Router), TypeScript, TailwindCSS, shadcn/ui
+- **Frontend**: Next.js 15 (App Router), TypeScript, TailwindCSS, shadcn/ui
 - **Backend**: Supabase (Postgres, Auth, Storage, Realtime, pgvector)
 - **Визуализация**: Recharts
 - **ИИ**: OpenAI API + pgvector для RAG
@@ -55,10 +55,13 @@ cp .env.example .env.local
 ### 4. Настройка Supabase
 
 1. Создайте проект в [Supabase](https://supabase.com)
-2. Выполните SQL-миграции из папки `database/`:
+2. Выполните SQL-миграции из папки `database/` строго по порядку:
    - `01_schema.sql` - создание таблиц и enum
    - `02_rls_policies.sql` - политики безопасности RLS
    - `03_views.sql` - представления для дэшбордов
+   - `04_security.sql` - hardening функций и триггеров
+   - `05_verify.sql` - ручная проверка RLS (psql)
+   - `06_hardening.sql` - закрытие RLS-дыр последнего аудита
 
 3. Включите pgvector extension:
 ```sql
@@ -118,18 +121,29 @@ mkk-portal/
 
 ## Деплой
 
-### Vercel (рекомендуется)
-
-1. Подключите репозиторий к Vercel
-2. Добавьте переменные окружения в настройках проекта
-3. Деплой выполнится автоматически
-
-### Сборка для production
+### Development
 
 ```bash
 npm run build
 npm start
 ```
+
+### Docker
+
+Образ собирается с `output: standalone`. `NEXT_PUBLIC_*` запекаются на этапе build:
+
+```bash
+docker build \
+  --build-arg NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co \
+  --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key \
+  -t mkk-portal .
+```
+
+Runtime-секреты не входят в образ и задаются окружением контейнера:
+- `SUPABASE_SERVICE_ROLE_KEY` - обязателен (админ-создание пользователей вернёт 503 без него)
+- `OPENAI_API_KEY` - обязателен для ИИ-помощника (вернёт 503 без него)
+
+Образ слушает порт 3000 и имеет встроенный HEALTHCHECK.
 
 ## Дополнительная настройка
 
@@ -145,7 +159,7 @@ CREATE OR REPLACE FUNCTION match_documents(
   query_embedding VECTOR(1536),
   match_threshold FLOAT,
   match_count INT,
-  user_role TEXT,
+  user_role user_role,
   user_branch_id UUID
 )
 RETURNS TABLE (

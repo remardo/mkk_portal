@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "test": "node scripts/check-production.js",
+    "test": "node scripts/test-admin-users-route.cjs",
     "check:production": "node scripts/check-production.js"
   },
   "dependencies": {

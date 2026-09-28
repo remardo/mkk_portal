@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import { toast } from "sonner"
 import { ArrowLeft, Eye, Calendar, User, Tag, Edit } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import { KnowledgeArticleWithCategory } from "@/types/database"
@@ -20,14 +21,9 @@ export default function ArticlePage() {
   const [article, setArticle] = useState<KnowledgeArticleWithCategory | null>(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
-  useEffect(() => {
-    fetchArticle()
-    checkAdmin()
-  }, [params.id])
-
-  const checkAdmin = async () => {
+  const checkAdmin = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
       const { data: profile } = await supabase
@@ -38,9 +34,9 @@ export default function ArticlePage() {
       
       setIsAdmin(profile?.role === "it_admin" || profile?.role === "director")
     }
-  }
+  }, [supabase])
 
-  const fetchArticle = async () => {
+  const fetchArticle = useCallback(async () => {
     try {
       setLoading(true)
       
@@ -57,10 +53,16 @@ export default function ArticlePage() {
       }
     } catch (error) {
       console.error("Error fetching article:", error)
+      toast.error("Ошибка загрузки статьи")
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase, params.id])
+
+  useEffect(() => {
+    fetchArticle()
+    checkAdmin()
+  }, [fetchArticle, checkAdmin])
 
   if (loading) {
     return (

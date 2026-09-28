@@ -67,29 +67,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // /admin: только it_admin и director
-  if (user && isRoute('/admin')) {
-    const { data: adminProfile } = await supabase
+  // Single profile fetch serves both the deactivation loop guard and the /admin role gate.
+  if (user) {
+    const { data: profile } = await supabase
       .from('profiles')
       .select('role,is_active')
       .eq('id', user.id)
       .single()
-    if (!adminProfile || adminProfile.is_active !== true || !['it_admin', 'director'].includes(adminProfile.role)) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-  }
 
-  // Deactivate redirect loop: inactive or missing profile must not stay authenticated.
-  // Sign out and send to /login instead of bouncing dashboard <-> login.
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_active')
-      .eq('id', user.id)
-      .single()
+    // Deactivate redirect loop: inactive or missing profile must not stay authenticated.
+    // Sign out and send to /login instead of bouncing dashboard <-> login.
     if (!profile || profile.is_active !== true) {
       await supabase.auth.signOut()
-      if (request.nextUrl.pathname !== '/login') {
+      if (pathname !== '/login') {
         const redirectResponse = NextResponse.redirect(new URL('/login', request.url))
         // Propagate cleared auth cookies so the browser actually signs out
         // and does not bounce between /dashboard and /login.
@@ -99,6 +89,11 @@ export async function middleware(request: NextRequest) {
         return redirectResponse
       }
       return response
+    }
+
+    // /admin: только it_admin и director
+    if (isRoute('/admin') && !['it_admin', 'director'].includes(profile.role)) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }
 

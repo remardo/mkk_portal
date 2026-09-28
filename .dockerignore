@@ -8,6 +8,8 @@ Dockerfile
 npm-debug.log
 .env*.local
 .env
+.env.*
+!.env.example
 coverage
 .nyc_output
 *.log

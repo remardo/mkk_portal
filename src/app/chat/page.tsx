@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -19,11 +19,67 @@ export default function ChatPage() {
   const [currentUser, setCurrentUser] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
+
+  const fetchMessages = useCallback(async (channelId: string) => {
+    try {
+      const { data } = await supabase
+        .from("chat_messages")
+        .select("*, author:profiles(full_name)")
+        .eq("channel_id", channelId)
+        .order("created_at", { ascending: true })
+        .limit(100)
+
+      setMessages(data || [])
+    } catch (error) {
+      console.error("Error fetching messages:", error)
+      toast.error("Ошибка загрузки сообщений")
+    }
+  }, [supabase])
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true)
+      
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        toast.error("Сессия истекла, войдите снова")
+        return
+      }
+      
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single()
+      
+      setCurrentUser(profile)
+      
+      // Fetch channels
+      const { data: channelsData } = await supabase
+        .from("chat_channels")
+        .select("*")
+        .order("created_at")
+      
+      setChannels(channelsData || [])
+      
+      // Set first channel as active
+      if (channelsData && channelsData.length > 0) {
+        setActiveChannel(channelsData[0].id)
+        fetchMessages(channelsData[0].id)
+      }
+    } catch (error) {
+      console.error("Error fetching chat data:", error)
+      toast.error("Ошибка загрузки чата")
+    } finally {
+      setLoading(false)
+    }
+  }, [supabase, fetchMessages])
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [fetchData])
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -63,63 +119,7 @@ export default function ChatPage() {
     return () => {
       subscription.unsubscribe()
     }
-  }, [activeChannel])
-
-  const fetchData = async () => {
-    try {
-      setLoading(true)
-      
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        toast.error("Сессия истекла, войдите снова")
-        return
-      }
-      
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single()
-      
-      setCurrentUser(profile)
-      
-      // Fetch channels
-      const { data: channelsData } = await supabase
-        .from("chat_channels")
-        .select("*")
-        .order("created_at")
-      
-      setChannels(channelsData || [])
-      
-      // Set first channel as active
-      if (channelsData && channelsData.length > 0) {
-        setActiveChannel(channelsData[0].id)
-        fetchMessages(channelsData[0].id)
-      }
-    } catch (error) {
-      console.error("Error fetching chat data:", error)
-      toast.error("Ошибка загрузки чата")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchMessages = async (channelId: string) => {
-    try {
-      const { data } = await supabase
-        .from("chat_messages")
-        .select("*, author:profiles(full_name)")
-        .eq("channel_id", channelId)
-        .order("created_at", { ascending: true })
-        .limit(100)
-      
-      setMessages(data || [])
-    } catch (error) {
-      console.error("Error fetching messages:", error)
-      toast.error("Ошибка загрузки сообщений")
-    }
-  }
+  }, [activeChannel, supabase])
 
   const handleChannelChange = (channelId: string) => {
     setActiveChannel(channelId)

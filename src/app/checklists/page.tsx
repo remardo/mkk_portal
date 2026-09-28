@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -16,13 +16,9 @@ export default function ChecklistsPage() {
   const [checklists, setChecklists] = useState<ChecklistRunWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<Profile | null>(null)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       
@@ -98,7 +94,11 @@ export default function ChecklistsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const handleItemCheck = async (runId: string, itemId: string, checked: boolean) => {
     try {
