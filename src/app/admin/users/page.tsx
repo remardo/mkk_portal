@@ -35,6 +35,12 @@ export default function AdminUsersPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<Profile | null>(null)
+  const [creating, setCreating] = useState(false)
+  const [createdCredential, setCreatedCredential] = useState<{
+    id: string
+    email: string
+    temporary_password: string
+  } | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -77,34 +83,38 @@ export default function AdminUsersPage() {
   }
 
   const handleCreate = async () => {
+    if (creating || createdCredential) return
     try {
-      // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: generateTempPassword(),
-        options: {
-          data: {
-            full_name: formData.full_name,
-            role: formData.role,
-          },
-        },
+      setCreating(true)
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          full_name: formData.full_name.trim(),
+          email: formData.email.trim(),
+          phone: formData.phone.trim() ? formData.phone.trim() : undefined,
+          role: formData.role,
+          branch_id: formData.branch_id ? formData.branch_id : null,
+        }),
       })
-
-      if (authError) throw authError
-
-      toast.success("Пользователь создан. Временный пароль отправлен на email.")
-      setIsDialogOpen(false)
-      setFormData({
-        full_name: "",
-        email: "",
-        phone: "",
-        role: "agent",
-        branch_id: "",
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        throw new Error(
+          (data && data.error) || "Ошибка при создании пользователя"
+        )
+      }
+      setCreatedCredential({
+        id: data.user.id,
+        email: formData.email.trim(),
+        temporary_password: data.temporary_password,
       })
+      toast.success("Пользователь создан")
       fetchData()
     } catch (error: any) {
       console.error("Error creating user:", error)
       toast.error(error.message || "Ошибка при создании пользователя")
+    } finally {
+      setCreating(false)
     }
   }
 
@@ -168,6 +178,7 @@ export default function AdminUsersPage() {
 
   const openCreateDialog = () => {
     setEditingUser(null)
+    setCreatedCredential(null)
     setFormData({
       full_name: "",
       email: "",
@@ -176,10 +187,6 @@ export default function AdminUsersPage() {
       branch_id: "",
     })
     setIsDialogOpen(true)
-  }
-
-  const generateTempPassword = () => {
-    return Math.random().toString(36).slice(-10) + "A1!"
   }
 
   const filteredUsers = users.filter(u =>
@@ -273,7 +280,13 @@ export default function AdminUsersPage() {
       </Card>
 
       {/* Create/Edit Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && creating) return
+          setIsDialogOpen(open)
+        }}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>
@@ -334,14 +347,16 @@ export default function AdminUsersPage() {
             <div className="space-y-2">
               <Label>Точка</Label>
               <Select
-                value={formData.branch_id}
-                onValueChange={(v) => setFormData({ ...formData, branch_id: v })}
+                value={formData.branch_id || "office"}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, branch_id: v === "office" ? "" : v })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Выберите точку" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Центральный офис</SelectItem>
+                  <SelectItem value="office">Центральный офис</SelectItem>
                   {branches.map((branch) => (
                     <SelectItem key={branch.id} value={branch.id}>
                       {branch.name}
@@ -350,14 +365,52 @@ export default function AdminUsersPage() {
                 </SelectContent>
               </Select>
             </div>
+            {!editingUser && createdCredential && (
+              <div className="space-y-2 rounded-lg border p-3">
+                <Label htmlFor="temporary-password">Временный пароль</Label>
+                <Input
+                  id="temporary-password"
+                  readOnly
+                  value={createdCredential.temporary_password}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Передайте временный пароль пользователю {createdCredential.email} вручную.
+                  Пароль показан один раз.
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Отмена
-            </Button>
-            <Button onClick={editingUser ? handleUpdate : handleCreate}>
-              {editingUser ? "Сохранить" : "Создать"}
-            </Button>
+            {!editingUser && createdCredential ? (
+              <>
+                <Button
+                  variant="outline"
+                  disabled={creating}
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  Закрыть
+                </Button>
+                <Button onClick={() => setIsDialogOpen(false)}>
+                  Готово
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  disabled={creating}
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  Отмена
+                </Button>
+                <Button
+                  onClick={editingUser ? handleUpdate : handleCreate}
+                  disabled={!editingUser && (creating || !!createdCredential)}
+                >
+                  {editingUser ? "Сохранить" : creating ? "Создание..." : "Создать"}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
