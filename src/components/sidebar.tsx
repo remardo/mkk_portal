@@ -13,12 +13,14 @@ import {
   CheckSquare,
   MessageSquare,
   Bell,
+  BellRing,
   Users,
   LayoutDashboard,
   Settings,
   Bot,
   LogOut,
 } from "lucide-react"
+import { NotificationsBell } from "@/components/notifications-bell"
 import { Profile } from "@/types/database"
 
 interface SidebarProps {
@@ -35,6 +37,7 @@ export const navigation = [
   { name: "Задачи", href: "/tasks", icon: CheckSquare },
   { name: "Новости", href: "/news", icon: Bell },
   { name: "Чат", href: "/chat", icon: MessageSquare },
+  { name: "Уведомления", href: "/notifications", icon: BellRing },
   { name: "Контакты", href: "/contacts", icon: Users },
   { name: "ИИ-помощник", href: "/ai-assistant", icon: Bot },
 ]
@@ -142,6 +145,7 @@ export function Sidebar({ user, onNavigate }: SidebarProps) {
             <p className="truncate text-sm font-medium text-white">{userName}</p>
             <p className="truncate text-[11px] text-slate-500">{userRole}</p>
           </div>
+          <NotificationsBell className="h-8 w-8 text-slate-400 hover:bg-white/10 hover:text-white" />
           <form action="/auth/signout" method="post">
             <Button
               variant="ghost"

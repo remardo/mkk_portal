@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sidebar, navigation, adminNavigation } from "@/components/sidebar"
 import { Building2, Menu, LogOut, X } from "lucide-react"
+import { NotificationsBell } from "@/components/notifications-bell"
 import { Profile } from "@/types/database"
 
 interface MobileNavProps {
@@ -40,6 +41,7 @@ export function MobileNav({ user }: MobileNavProps) {
           <span className="font-semibold">{current?.name ?? "МКК ФК"}</span>
         </Link>
         <div className="ml-auto flex items-center gap-1">
+          <NotificationsBell />
           <form action="/auth/signout" method="post">
             <Button variant="ghost" size="icon" type="submit" aria-label="Выйти">
               <LogOut className="h-5 w-5" />

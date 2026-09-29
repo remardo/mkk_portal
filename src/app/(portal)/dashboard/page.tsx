@@ -74,6 +74,8 @@ export default async function DashboardPage() {
     { data: myCourses },
     { data: unreadNews },
     { data: mandatoryDocs },
+    { data: myNotifications },
+    { data: recentComments },
   ] = await Promise.all([
     // My tasks
     supabase
@@ -106,6 +108,22 @@ export default async function DashboardPage() {
     
     // Mandatory documents not acknowledged (exclude IDs already acked)
     filteredDocsQuery,
+
+    // Unread notifications
+    supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("is_read", false)
+      .order("created_at", { ascending: false })
+      .limit(5),
+
+    // Recent comments on my tasks
+    supabase
+      .from("task_comments")
+      .select("*, author:profiles!task_comments_author_id_fkey(full_name), task:tasks!inner(id,title)")
+      .order("created_at", { ascending: false })
+      .limit(10),
   ])
 
   return (
@@ -346,6 +364,79 @@ export default async function DashboardPage() {
                   ))
                 ) : (
                   <p className="text-muted-foreground text-center py-8">Нет новых новостей</p>
+                )}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Notifications + Comments */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Уведомления</CardTitle>
+              <CardDescription>Непрочитанные</CardDescription>
+            </div>
+            <Link href="/notifications">
+              <Button variant="ghost" size="sm" className="gap-1">
+                Все <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {myNotifications && myNotifications.length > 0 ? (
+                myNotifications.map((n) => (
+                  <Link key={n.id} href={n.link || "/notifications"}>
+                    <div className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50">
+                      <div className="mt-1.5 h-2 w-2 rounded-full bg-blue-500 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{n.title}</p>
+                        <p className="text-xs text-muted-foreground">{formatRelativeTime(n.created_at)}</p>
+                      </div>
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <p className="text-muted-foreground text-center py-8">Нет новых уведомлений</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Комментарии</CardTitle>
+              <CardDescription>Последние в задачах</CardDescription>
+            </div>
+            <Link href="/tasks">
+              <Button variant="ghost" size="sm" className="gap-1">
+                Все <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[200px]">
+              <div className="space-y-3">
+                {recentComments && recentComments.length > 0 ? (
+                  recentComments.slice(0, 5).map((c) => (
+                    <Link key={c.id} href={`/tasks/${c.task?.id || c.task_id}`}>
+                      <div className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm">
+                            <span className="font-medium">{c.author?.full_name}</span>
+                            <span className="text-muted-foreground"> в «{c.task?.title}»</span>
+                          </p>
+                          <p className="text-sm text-muted-foreground truncate mt-0.5">{c.content}</p>
+                        </div>
+                      </div>
+                    </Link>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">Комментариев пока нет</p>
                 )}
               </div>
             </ScrollArea>

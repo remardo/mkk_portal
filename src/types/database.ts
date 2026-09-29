@@ -305,6 +305,28 @@ export interface ChecklistRunWithDetails extends ChecklistRun {
 // --------------------------------------------
 // Задачи
 // --------------------------------------------
+export interface Project {
+  id: string;
+  parent_id?: string | null;
+  name: string;
+  description?: string;
+  status: "active" | "archived";
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  body?: string;
+  link?: string;
+  is_read: boolean;
+  created_at: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -315,6 +337,9 @@ export interface Task {
   author_id: string;
   assignee_id?: string;
   branch_id?: string;
+  project_id?: string | null;
+  parent_task_id?: string | null;
+  position?: number;
   due_date?: string;
   created_at: string;
   updated_at: string;
@@ -341,8 +366,12 @@ export interface TaskWithDetails extends Task {
   author?: Profile;
   assignee?: Profile;
   branch?: Branch;
+  project?: Project;
   comments?: (TaskComment & { author?: Profile })[];
   attachments?: TaskAttachment[];
+  subtasks?: TaskWithDetails[];
+  comments_count?: number;
+  attachments_count?: number;
   is_overdue?: boolean;
 }
 
