@@ -204,91 +204,79 @@ export default function ContactsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Mail className="h-5 w-5" />
-                  IT-поддержка
+                  <Phone className="h-5 w-5" />
+                  Горячая линия
                 </CardTitle>
                 <CardDescription>
-                  Технические проблемы и вопросы
+                  Для клиентов и сотрудников, звонок бесплатный
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
                 <p className="text-sm">
-                  <strong>Email:</strong> it@mkk-fk.ru
+                  <strong>Телефон:</strong> <a href="tel:88005503833" className="hover:underline">8 800 550 38 33</a>
                 </p>
+                <p className="text-sm">
+                  <strong>Email:</strong> micron@micron.cc
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Финансовый уполномоченный
+                </CardTitle>
+                <CardDescription>
+                  Куда направлять жалобы клиентов
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-sm">
+                  <strong>Сайт:</strong> finombudsman.ru
+                </p>
+                <p className="text-sm">
+                  <strong>Телефон:</strong> <a href="tel:88002000010" className="hover:underline">8 800 200-00-10</a>
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  Банк России
+                </CardTitle>
+                <CardDescription>
+                  Приёмная Банка России
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-sm">
+                  <strong>Сайт:</strong> cbr.ru
+                </p>
+                <p className="text-sm">
+                  <strong>Приёмная:</strong> cbr.ru/reception
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  IT-поддержка
+                </CardTitle>
+                <CardDescription>
+                  Технические проблемы портала и CRM
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
                 <p className="text-sm">
                   <strong>Телефон:</strong> внутренний 101
                 </p>
                 <p className="text-sm text-muted-foreground">
                   Режим работы: Пн-Пт 9:00-18:00
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Операционный отдел
-                </CardTitle>
-                <CardDescription>
-                  Операционные вопросы
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-sm">
-                  <strong>Email:</strong> ops@mkk-fk.ru
-                </p>
-                <p className="text-sm">
-                  <strong>Телефон:</strong> внутренний 102
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Режим работы: Пн-Пт 9:00-18:00
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Phone className="h-5 w-5" />
-                  Бухгалтерия
-                </CardTitle>
-                <CardDescription>
-                  Финансовые вопросы
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-sm">
-                  <strong>Email:</strong> accounting@mkk-fk.ru
-                </p>
-                <p className="text-sm">
-                  <strong>Телефон:</strong> внутренний 103
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Режим работы: Пн-Пт 9:00-18:00
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Отдел безопасности
-                </CardTitle>
-                <CardDescription>
-                  Вопросы безопасности и верификации
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-sm">
-                  <strong>Email:</strong> security@mkk-fk.ru
-                </p>
-                <p className="text-sm">
-                  <strong>Телефон:</strong> внутренний 104
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Режим работы: круглосуточно
                 </p>
               </CardContent>
             </Card>
