@@ -200,9 +200,9 @@ export default async function DashboardPage() {
                     <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg border">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <Link href={`/tasks/${task.id}`} className="font-medium hover:underline truncate">
+                          <span className="font-medium truncate">
                             {task.title}
-                          </Link>
+                          </span>
                           {isOverdue(task.due_date, task.status) && (
                             <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
                           )}
@@ -248,9 +248,9 @@ export default async function DashboardPage() {
                     <div key={checklist.id} className="flex items-start gap-3 p-3 rounded-lg border">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <Link href={`/checklists/${checklist.id}`} className="font-medium hover:underline truncate">
+                          <span className="font-medium truncate">
                             {checklist.checklist?.title}
-                          </Link>
+                          </span>
                           {isOverdue(checklist.due_date, checklist.status) && (
                             <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
                           )}
@@ -294,9 +294,9 @@ export default async function DashboardPage() {
                   myCourses.map((progress) => (
                     <div key={progress.id} className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <Link href={`/courses/${progress.course_id}`} className="font-medium hover:underline">
+                        <span className="font-medium">
                           {progress.course?.title}
-                        </Link>
+                        </span>
                       </div>
                       <Progress value={progress.status === 'completed' ? 100 : 50} className="h-2" />
                       <p className="text-xs text-muted-foreground">В процессе</p>
@@ -331,9 +331,9 @@ export default async function DashboardPage() {
                     <div key={news.id} className="flex items-start gap-3 p-3 rounded-lg border">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <Link href={`/news/${news.id}`} className="font-medium hover:underline truncate">
+                          <span className="font-medium truncate">
                             {news.title}
-                          </Link>
+                          </span>
                           {news.type === "critical" && (
                             <Badge variant="destructive">Важно</Badge>
                           )}
@@ -368,7 +368,7 @@ export default async function DashboardPage() {
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {mandatoryDocs.map((doc) => (
-                <Link key={doc.id} href={`/documents/${doc.id}`}>
+                <Link key={doc.id} href="/documents">
                   <Badge variant="outline" className="cursor-pointer hover:bg-amber-100">
                     {doc.title}
                   </Badge>

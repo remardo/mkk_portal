@@ -42,7 +42,7 @@ export default function ArticlePage() {
       
       const { data } = await supabase
         .from("knowledge_articles")
-        .select("*, category:knowledge_categories(*), created_by_profile:profiles(full_name)")
+        .select("*, category:knowledge_categories(*), created_by_profile:profiles!knowledge_articles_created_by_fkey(full_name)")
         .eq("id", params.id)
         .single()
       
@@ -102,17 +102,7 @@ export default function ArticlePage() {
 
       {/* Article Header */}
       <div>
-        <div className="flex items-start justify-between gap-4">
-          <h1 className="text-3xl font-bold">{article.title}</h1>
-          {isAdmin && (
-            <Link href={`/admin/knowledge/${article.id}/edit`}>
-              <Button variant="outline" size="sm">
-                <Edit className="h-4 w-4 mr-2" />
-                Редактировать
-              </Button>
-            </Link>
-          )}
-        </div>
+        <h1 className="text-3xl font-bold">{article.title}</h1>
         
         <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-muted-foreground">
           {article.category && (

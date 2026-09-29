@@ -212,28 +212,16 @@ export default function AdminPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            <Link href="/admin/users/new">
+            <Link href="/admin/users">
               <Button variant="outline">
                 <Plus className="h-4 w-4 mr-2" />
                 Новый пользователь
               </Button>
             </Link>
-            <Link href="/admin/knowledge/new">
+            <Link href="/admin/users">
               <Button variant="outline">
                 <Plus className="h-4 w-4 mr-2" />
-                Новая статья
-              </Button>
-            </Link>
-            <Link href="/admin/documents/new">
-              <Button variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Новый документ
-              </Button>
-            </Link>
-            <Link href="/admin/checklists/new">
-              <Button variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Новый чек-лист
+                Пользователи
               </Button>
             </Link>
           </div>

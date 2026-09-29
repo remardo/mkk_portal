@@ -13,7 +13,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { toast } from "sonner"
-import Link from "next/link"
 import { Plus, Search, CheckSquare, Clock, AlertCircle } from "lucide-react"
 import { formatDate, getStatusColor, getPriorityColor, getTaskTypeLabel, getTaskPriorityLabel, getTaskStatusLabel, isOverdue } from "@/lib/utils"
 import { TaskWithDetails, TaskType, TaskPriority, Profile, Branch } from "@/types/database"
@@ -169,11 +168,9 @@ export default function TasksPage() {
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <Link href={`/tasks/${task.id}`}>
-                <CardTitle className="text-base hover:underline cursor-pointer">
-                  {task.title}
-                </CardTitle>
-              </Link>
+              <CardTitle className="text-base">
+                {task.title}
+              </CardTitle>
               <CardDescription className="mt-1">
                 {task.branch?.name} • {getTaskTypeLabel(task.type)}
               </CardDescription>

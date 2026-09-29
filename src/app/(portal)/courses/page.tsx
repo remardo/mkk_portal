@@ -209,12 +209,12 @@ export default function CoursesPage() {
                 Начать
               </Button>
             ) : course.progress.status === "in_progress" ? (
-              <Link href={`/courses/${course.id}`} className="w-full">
-                <Button className="w-full">
+              <Button className="w-full" asChild>
+                <Link href={`/courses/${course.id}`}>
                   <Play className="h-4 w-4 mr-2" />
                   Продолжить
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             ) : (
               <Button variant="outline" className="w-full" disabled>
                 <CheckCircle className="h-4 w-4 mr-2" />
@@ -328,9 +328,9 @@ export default function CoursesPage() {
                       </Button>
                     )}
                     {lastAttempt && (
-                      <Link href={`/tests/${test.id}/results`}>
-                        <Button variant="outline">Результаты</Button>
-                      </Link>
+                      <span className="text-sm text-muted-foreground self-center">
+                        Оценка: {lastAttempt.score ?? "—"}%
+                      </span>
                     )}
                   </div>
                 </CardContent>

@@ -6,8 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import Link from "next/link"
-import { Bell, AlertCircle, Check, Clock, Eye } from "lucide-react"
+import { Bell, AlertCircle, Check, Clock } from "lucide-react"
 import { formatDate, formatRelativeTime, getNewsTypeLabel } from "@/lib/utils"
 import { NewsWithRead } from "@/types/database"
 
@@ -31,7 +30,7 @@ export default function NewsPage() {
       // Fetch news
       const { data: newsData } = await supabase
         .from("news")
-        .select("*, created_by_profile:profiles(full_name)")
+        .select("*, created_by_profile:profiles!news_created_by_fkey(full_name)")
         .lte("published_at", new Date().toISOString())
         .order("published_at", { ascending: false })
       
@@ -125,15 +124,9 @@ export default function NewsPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground line-clamp-3">
+        <p className="text-sm text-muted-foreground whitespace-pre-line mt-2">
           {item.content}
         </p>
-        <Link href={`/news/${item.id}`}>
-          <Button variant="link" className="pl-0 mt-2">
-            <Eye className="h-4 w-4 mr-2" />
-            Читать полностью
-          </Button>
-        </Link>
       </CardContent>
     </Card>
   )

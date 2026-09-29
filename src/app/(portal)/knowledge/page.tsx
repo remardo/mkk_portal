@@ -37,7 +37,7 @@ export default function KnowledgePage() {
       // Fetch articles
       const { data: articlesData } = await supabase
         .from("knowledge_articles")
-        .select("*, category:knowledge_categories(*), created_by_profile:profiles(full_name)")
+        .select("*, category:knowledge_categories(*), created_by_profile:profiles!knowledge_articles_created_by_fkey(full_name)")
         .eq("status", "published")
         .order("created_at", { ascending: false })
       
@@ -74,7 +74,7 @@ export default function KnowledgePage() {
         }
         const { data: fullArticles } = await supabase
           .from("knowledge_articles")
-          .select("*, category:knowledge_categories(*), created_by_profile:profiles(full_name)")
+          .select("*, category:knowledge_categories(*), created_by_profile:profiles!knowledge_articles_created_by_fkey(full_name)")
           .in("id", articleIds)
         
         setArticles(fullArticles || [])
