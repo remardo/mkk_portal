@@ -108,11 +108,14 @@ export default function CoursesPage() {
       
       const { error } = await supabase
         .from("course_progress")
-        .upsert({
-          course_id: courseId,
-          user_id: user.id,
-          status: "in_progress",
-        })
+        .upsert(
+          {
+            course_id: courseId,
+            user_id: user.id,
+            status: "in_progress",
+          },
+          { onConflict: "course_id,user_id" }
+        )
       
       if (error) throw error
       
