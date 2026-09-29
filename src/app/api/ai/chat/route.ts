@@ -17,14 +17,46 @@ function isValidHistoryItem(item: unknown): item is ChatHistoryItem {
   )
 }
 
+const rateBucket = new Map<string, number[]>()
+const RATE_LIMIT = 20
+const RATE_WINDOW_MS = 60 * 60 * 1000
+
+function isAllowedOrigin(req: NextRequest): boolean {
+  const origin = req.headers.get("origin")
+  if (!origin) return true
+  if (origin === req.nextUrl.origin) return true
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL
+  if (appUrl && (origin === appUrl || origin === appUrl.replace(/\/$/, ""))) return true
+  return false
+}
+
+function isRateLimited(key: string): boolean {
+  const now = Date.now()
+  const hits = (rateBucket.get(key) ?? []).filter((t) => now - t < RATE_WINDOW_MS)
+  if (hits.length >= RATE_LIMIT) {
+    rateBucket.set(key, hits)
+    return true
+  }
+  hits.push(now)
+  rateBucket.set(key, hits)
+  return false
+}
+
 export async function POST(req: NextRequest) {
   try {
+    if (!isAllowedOrigin(req)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
     const supabase = await createClient()
 
     // Check authentication
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    if (isRateLimited(user.id)) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 })
     }
 
     // Get user profile for RLS

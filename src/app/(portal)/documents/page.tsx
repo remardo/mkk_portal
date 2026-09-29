@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
+import Link from "next/link"
 import { FileText, CheckCircle, AlertCircle, ExternalLink } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import { DocumentWithCategory, DocumentCategory } from "@/types/database"
@@ -94,11 +95,6 @@ export default function DocumentsPage() {
     }
   }
 
-  const getFileUrl = (filePath: string) => {
-    const { data } = supabase.storage.from("documents").getPublicUrl(filePath)
-    return data.publicUrl
-  }
-
   const mandatoryDocs = documents.filter(d => d.mandatory && !acknowledgedDocs.has(d.id))
   const allDocs = documents
 
@@ -140,12 +136,12 @@ export default function DocumentsPage() {
             </div>
             
             <div className="flex gap-2">
-              <a href={getFileUrl(doc.file_path)} target="_blank" rel="noopener noreferrer">
+              <Link href={`/documents/${doc.id}`}>
                 <Button variant="outline" size="sm">
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Открыть
                 </Button>
-              </a>
+              </Link>
               
               {doc.mandatory && !isAcknowledged && (
                 <Button

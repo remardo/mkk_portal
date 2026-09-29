@@ -113,6 +113,7 @@ export interface Document {
   category_id?: string;
   title: string;
   description?: string;
+  content?: string | null;
   file_path: string;
   version: string;
   effective_from?: string;
