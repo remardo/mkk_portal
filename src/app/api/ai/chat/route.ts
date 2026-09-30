@@ -90,19 +90,28 @@ export async function POST(req: NextRequest) {
     }
     const validHistory = history as ChatHistoryItem[]
 
-    const apiKey = process.env.OPENAI_API_KEY
-    if (!apiKey) {
+    // Чат: TokenHarbor (через relay), эмбеддинги: отдельный провайдер
+    // (у TokenHarbor нет /embeddings) — остаются на OPENAI_* relay.
+    const chatKey = process.env.TOKENHARBOR_API_KEY || process.env.OPENAI_API_KEY
+    if (!chatKey) {
       return NextResponse.json({ error: "AI service not configured" }, { status: 503 })
     }
-    const baseURL = process.env.OPENAI_BASE_URL || undefined
-    const openai = new OpenAI({ apiKey, ...(baseURL ? { baseURL } : {}) })
+    const chatBaseURL = process.env.TOKENHARBOR_BASE_URL || process.env.OPENAI_BASE_URL || undefined
+    const chatModel = process.env.TOKENHARBOR_MODEL || process.env.OPENAI_MODEL || "gpt-4o-mini"
+    const openai = new OpenAI({ apiKey: chatKey, ...(chatBaseURL ? { baseURL: chatBaseURL } : {}) })
 
-    // Vector search: embeddings may be unavailable on OpenAI-compatible
-    // providers (OpenRouter has no /embeddings), so degrade to text search.
+    const embedKey = process.env.OPENAI_API_KEY
+    const embedBaseURL = process.env.OPENAI_BASE_URL || undefined
+    const embedClient = embedKey
+      ? new OpenAI({ apiKey: embedKey, ...(embedBaseURL ? { baseURL: embedBaseURL } : {}) })
+      : null
+
+    // Vector search: embeddings may be unavailable, so degrade to text search.
     type MatchDoc = { content: string; title: string | null; source_id: string; source_type: string }
     let relevantDocs: MatchDoc[] | null = null
     try {
-      const embeddingResponse = await openai.embeddings.create({
+      if (!embedClient) throw new Error("no embeddings backend")
+      const embeddingResponse = await embedClient.embeddings.create({
         model: process.env.OPENAI_EMBEDDINGS_MODEL || "text-embedding-3-small",
         input: message,
       })
@@ -168,9 +177,9 @@ export async function POST(req: NextRequest) {
 КОНТЕКСТ ИЗ БАЗЫ ЗНАНИЙ:
 ${context || "Контекст не найден"}`
 
-    // Call OpenAI
+    // Call chat model (TokenHarbor)
     const completion = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+      model: chatModel,
       messages: [
         { role: "system", content: systemPrompt },
         ...validHistory.map((h) => ({ role: h.role, content: h.content })),
