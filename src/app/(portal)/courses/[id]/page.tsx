@@ -175,9 +175,9 @@ export default function CoursePage() {
         </Button>
       </Link>
 
-      <div>
+      <div className="min-w-0">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <h1 className="text-3xl font-bold">{course.title}</h1>
+          <h1 className="text-3xl font-bold break-words min-w-0">{course.title}</h1>
           <div className="flex gap-2">
             {course.mandatory && <Badge variant="destructive">Обязательный</Badge>}
             {isCompleted && <Badge className="bg-green-500">Завершён</Badge>}
@@ -209,12 +209,12 @@ export default function CoursePage() {
               <button
                 key={lesson.id}
                 onClick={() => openLesson(lesson.id)}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm flex items-center gap-2 hover:bg-muted ${
+                className={`w-full text-left px-3 py-2 rounded-md text-sm flex items-center gap-2 hover:bg-muted min-w-0 ${
                   lesson.id === activeLessonId ? "bg-muted font-medium" : ""
                 }`}
               >
-                <span className="text-muted-foreground">{i + 1}.</span>
-                <span className="flex-1 truncate">{lesson.title}</span>
+                <span className="text-muted-foreground shrink-0">{i + 1}.</span>
+                <span className="flex-1 min-w-0 truncate">{lesson.title}</span>
                 <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
               </button>
             ))}

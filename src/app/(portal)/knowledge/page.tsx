@@ -180,9 +180,9 @@ export default function KnowledgePage() {
                 <div className="grid gap-4 md:grid-cols-2">
                   {category.articles.map((article) => (
                     <Link key={article.id} href={`/knowledge/${article.id}`}>
-                      <Card className="h-full hover:border-primary transition-colors cursor-pointer">
+                      <Card className="h-full min-w-0 hover:border-primary transition-colors cursor-pointer">
                         <CardHeader className="pb-3">
-                          <CardTitle className="text-lg">{article.title}</CardTitle>
+                          <CardTitle className="text-lg line-clamp-2 break-words">{article.title}</CardTitle>
                           <CardDescription>
                             {truncateText(article.content, 120)}
                           </CardDescription>
@@ -199,9 +199,9 @@ export default function KnowledgePage() {
                             {article.tags && article.tags.length > 0 && (
                               <div className="flex gap-1">
                                 {article.tags.slice(0, 2).map((tag) => (
-                                  <Badge key={tag} variant="outline" className="text-xs">
-                                    <Tag className="h-3 w-3 mr-1" />
-                                    {tag}
+                                  <Badge key={tag} variant="outline" className="text-xs max-w-[120px] truncate">
+                                    <Tag className="h-3 w-3 mr-1 shrink-0" />
+                                    <span className="truncate">{tag}</span>
                                   </Badge>
                                 ))}
                               </div>

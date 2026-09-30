@@ -103,7 +103,7 @@ export default function NotificationsPage() {
                   <span className="text-xs text-muted-foreground">{formatRelativeTime(n.created_at)}</span>
                 </div>
                 <p className="font-medium mt-1">{n.title}</p>
-                {n.body && <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">{n.body}</p>}
+                {n.body && <p className="text-sm text-muted-foreground line-clamp-2 break-words mt-0.5">{n.body}</p>}
                 <div className="flex gap-2 mt-2">
                   {n.link && (
                     <Link href={n.link} onClick={() => markRead(n.id)}>

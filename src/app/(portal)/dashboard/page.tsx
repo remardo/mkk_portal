@@ -217,8 +217,8 @@ export default async function DashboardPage() {
                   myTasks.map((task) => (
                     <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg border">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium truncate">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-medium truncate min-w-0">
                             {task.title}
                           </span>
                           {isOverdue(task.due_date, task.status) && (
@@ -459,9 +459,9 @@ export default async function DashboardPage() {
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {mandatoryDocs.map((doc) => (
-                <Link key={doc.id} href="/documents">
-                  <Badge variant="outline" className="cursor-pointer hover:bg-amber-100">
-                    {doc.title}
+                <Link key={doc.id} href="/documents" className="max-w-full">
+                  <Badge variant="outline" className="cursor-pointer hover:bg-amber-100 max-w-full whitespace-normal break-words text-left">
+                    <span className="min-w-0">{doc.title}</span>
                   </Badge>
                 </Link>
               ))}

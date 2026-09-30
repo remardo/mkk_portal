@@ -146,7 +146,7 @@ export default function DocumentPage() {
 
       <div>
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <h1 className="text-3xl font-bold">{doc.title}</h1>
+          <h1 className="text-3xl font-bold break-words min-w-0">{doc.title}</h1>
           {doc.mandatory && (
             <Badge variant={isAcknowledged ? "default" : "destructive"}>
               {isAcknowledged ? "Ознакомлен" : "Обязателен"}

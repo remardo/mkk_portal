@@ -182,16 +182,16 @@ export default function ChecklistsPage() {
       : 0
     
     return (
-      <Card className={checklist.is_overdue ? "border-red-200" : ""}>
+      <Card className={`min-w-0 ${checklist.is_overdue ? "border-red-200" : ""}`}>
         <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle className="text-lg">{checklist.checklist?.title}</CardTitle>
-              <CardDescription>
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <CardTitle className="text-lg line-clamp-2 break-words">{checklist.checklist?.title}</CardTitle>
+              <CardDescription className="truncate">
                 {checklist.branch?.name} • Срок: {formatDate(checklist.due_date)}
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               {checklist.is_overdue && (
                 <AlertCircle className="h-5 w-5 text-red-500" />
               )}
@@ -227,8 +227,8 @@ export default function ChecklistsPage() {
                       handleItemCheck(checklist.id, item.id, checked as boolean)
                     }
                   />
-                  <div className="flex-1">
-                    <p className={`text-sm ${item.runItem?.checked ? "line-through text-muted-foreground" : ""}`}>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm break-words ${item.runItem?.checked ? "line-through text-muted-foreground" : ""}`}>
                       {item.title}
                     </p>
                     {item.type === "photo" && (

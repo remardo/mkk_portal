@@ -82,6 +82,23 @@
 }
 
 /* Markdown styles */
+.markdown-content {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.markdown-content > table,
+.markdown-content table {
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.markdown-content img {
+  max-width: 100%;
+  height: auto;
+}
+
 .markdown-content h1 {
   @apply text-2xl font-bold mb-4;
 }

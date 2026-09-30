@@ -166,12 +166,12 @@ export default function CoursesPage() {
   const notStartedCourses = courses.filter(c => !c.progress || c.progress.status === "not_started")
 
   const CourseCard = ({ course }: { course: CourseWithProgress }) => (
-    <Card>
+    <Card className="min-w-0">
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="text-lg">{course.title}</CardTitle>
-            <CardDescription className="line-clamp-2">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <CardTitle className="text-lg line-clamp-2 break-words">{course.title}</CardTitle>
+            <CardDescription className="line-clamp-2 break-words">
               {course.description || "Нет описания"}
             </CardDescription>
           </div>
@@ -304,13 +304,13 @@ export default function CoursesPage() {
             const passed = testAttempts.some(a => a.passed)
             
             return (
-              <Card key={test.id}>
+              <Card key={test.id} className="min-w-0">
                 <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg">{test.title}</CardTitle>
-                      <CardDescription>
-                        Проходной балл: {test.pass_score}% • 
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <CardTitle className="text-lg line-clamp-2 break-words">{test.title}</CardTitle>
+                      <CardDescription className="truncate">
+                        Проходной балл: {test.pass_score}% •
                         Попыток: {testAttempts.length}{test.max_attempts ? `/${test.max_attempts}` : ""}
                       </CardDescription>
                     </div>

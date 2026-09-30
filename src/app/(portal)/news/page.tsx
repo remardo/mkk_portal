@@ -89,14 +89,14 @@ export default function NewsPage() {
   const readNews = news.filter(n => n.is_read)
 
   const NewsCard = ({ item, showMarkAsRead = false }: { item: NewsWithRead; showMarkAsRead?: boolean }) => (
-    <Card className={item.type === "critical" ? "border-red-200" : item.is_read ? "opacity-75" : ""}>
+    <Card className={`min-w-0 ${item.type === "critical" ? "border-red-200" : item.is_read ? "opacity-75" : ""}`}>
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             {item.type === "critical" && (
-              <AlertCircle className="h-5 w-5 text-red-500" />
+              <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
             )}
-            <CardTitle className={`text-lg ${item.is_read ? "font-normal" : ""}`}>
+            <CardTitle className={`text-lg break-words ${item.is_read ? "font-normal" : ""}`}>
               {item.title}
             </CardTitle>
           </div>
@@ -123,8 +123,8 @@ export default function NewsPage() {
           </span>
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground whitespace-pre-line mt-2">
+      <CardContent className="min-w-0">
+        <p className="text-sm text-muted-foreground whitespace-pre-line break-words mt-2 [overflow-wrap:anywhere]">
           {item.content}
         </p>
       </CardContent>

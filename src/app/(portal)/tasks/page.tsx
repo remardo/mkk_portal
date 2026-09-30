@@ -302,7 +302,7 @@ export default function TasksPage() {
                   <Label>Описание</Label>
                   <Textarea value={newTask.description} onChange={(e) => setNewTask({ ...newTask, description: e.target.value })} placeholder="Описание задачи" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Тип</Label>
                     <Select value={newTask.type} onValueChange={(v) => setNewTask({ ...newTask, type: v as TaskType })}>
@@ -327,7 +327,7 @@ export default function TasksPage() {
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Проект</Label>
                     <Select value={newTask.project_id} onValueChange={(v) => setNewTask({ ...newTask, project_id: v === "none" ? "" : v })}>
@@ -353,7 +353,7 @@ export default function TasksPage() {
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Точка</Label>
                     <Select value={newTask.branch_id} onValueChange={(v) => setNewTask({ ...newTask, branch_id: v === "none" ? "" : v })}>

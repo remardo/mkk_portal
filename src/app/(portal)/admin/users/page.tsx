@@ -234,31 +234,31 @@ export default function AdminUsersPage() {
             {filteredUsers.map((user) => (
               <div
                 key={user.id}
-                className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50"
+                className="flex items-center justify-between gap-2 flex-wrap p-4 rounded-lg border hover:bg-muted/50"
               >
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <div className="flex items-center gap-4 min-w-0 flex-1">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                     <span className="text-sm font-medium text-primary">
                       {(user.full_name || '').split(" ").map(n => n[0]).join("").toUpperCase()}
                     </span>
                   </div>
-                  <div>
-                    <p className="font-medium">{user.full_name}</p>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Mail className="h-3 w-3" />
-                        {user.email}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">{user.full_name}</p>
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground min-w-0">
+                      <span className="flex items-center gap-1 min-w-0">
+                        <Mail className="h-3 w-3 shrink-0" />
+                        <span className="truncate break-all">{user.email}</span>
                       </span>
                       {(user as Profile & { branch?: { name?: string } }).branch?.name && (
-                        <span className="flex items-center gap-1">
-                          <Building2 className="h-3 w-3" />
-                          {(user as Profile & { branch?: { name?: string } }).branch?.name}
+                        <span className="flex items-center gap-1 min-w-0">
+                          <Building2 className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{(user as Profile & { branch?: { name?: string } }).branch?.name}</span>
                         </span>
                       )}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <Badge variant={user.is_active ? "default" : "secondary"}>
                     {getRoleLabel(user.role)}
                   </Badge>

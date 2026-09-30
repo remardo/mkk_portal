@@ -101,8 +101,8 @@ export default function ArticlePage() {
       </Link>
 
       {/* Article Header */}
-      <div>
-        <h1 className="text-3xl font-bold">{article.title}</h1>
+      <div className="min-w-0">
+        <h1 className="text-3xl font-bold break-words">{article.title}</h1>
         
         <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-muted-foreground">
           {article.category && (

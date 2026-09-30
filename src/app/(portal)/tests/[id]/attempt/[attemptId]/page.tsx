@@ -174,8 +174,8 @@ export default function AttemptPage() {
         </Button>
       </Link>
 
-      <div>
-        <h1 className="text-3xl font-bold">{test.title}</h1>
+      <div className="min-w-0">
+        <h1 className="text-3xl font-bold break-words">{test.title}</h1>
         <p className="text-muted-foreground mt-1">
           Проходной балл: {test.pass_score}%
         </p>

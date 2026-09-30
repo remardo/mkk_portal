@@ -232,7 +232,7 @@ export default function TaskPage() {
 
       <div>
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <h1 className="text-2xl font-bold flex-1">{task.title}</h1>
+          <h1 className="text-2xl font-bold flex-1 min-w-0 break-words">{task.title}</h1>
           <div className="flex gap-2">
             <Badge className={getPriorityColor(task.priority)}>{getTaskPriorityLabel(task.priority)}</Badge>
             <Badge className={getStatusColor(task.status)}>{getTaskStatusLabel(task.status)}</Badge>
@@ -311,10 +311,10 @@ export default function TaskPage() {
           <CardContent className="space-y-2">
             {subtasks.map((s) => (
               <Link key={s.id} href={`/tasks/${s.id}`}>
-                <div className="flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-muted">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-muted min-w-0">
                   <CheckSquare className={`h-4 w-4 shrink-0 ${s.status === "done" ? "text-green-500" : "text-muted-foreground"}`} />
-                  <span className={`text-sm flex-1 truncate ${s.status === "done" ? "line-through text-muted-foreground" : ""}`}>{s.title}</span>
-                  <span className="text-xs text-muted-foreground shrink-0">{s.assignee?.full_name || ""}</span>
+                  <span className={`text-sm flex-1 min-w-0 truncate ${s.status === "done" ? "line-through text-muted-foreground" : ""}`}>{s.title}</span>
+                  <span className="text-xs text-muted-foreground shrink-0 max-w-[120px] truncate">{s.assignee?.full_name || ""}</span>
                 </div>
               </Link>
             ))}
@@ -333,8 +333,8 @@ export default function TaskPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             {attachments.map((a) => (
-              <div key={a.id} className="flex items-center gap-2 px-3 py-2 rounded-md border">
-                <span className="text-sm flex-1 truncate">{a.file_path.split("/").pop()}</span>
+              <div key={a.id} className="flex items-center gap-2 px-3 py-2 rounded-md border min-w-0">
+                <span className="text-sm flex-1 min-w-0 truncate break-all">{a.file_path.split("/").pop()}</span>
                 <Button size="icon" variant="ghost" onClick={() => downloadFile(a.file_path)}><Download className="h-4 w-4" /></Button>
                 <Button size="icon" variant="ghost" onClick={() => deleteAttachment(a.id, a.file_path)}><Trash2 className="h-4 w-4" /></Button>
               </div>
@@ -363,7 +363,7 @@ export default function TaskPage() {
                   <span className="font-medium text-foreground">{c.author?.full_name || "—"}</span>
                   <span>{formatRelativeTime(c.created_at)}</span>
                 </div>
-                <p className="text-sm whitespace-pre-wrap">{c.content}</p>
+                <p className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{c.content}</p>
               </div>
             ))}
             {comments.length === 0 && (

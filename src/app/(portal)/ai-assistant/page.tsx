@@ -152,7 +152,7 @@ export default function AIAssistantPage() {
                       : "bg-muted"
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  <p className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{message.content}</p>
                   
                   {message.sources && message.sources.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-border/50">
@@ -169,10 +169,11 @@ export default function AIAssistantPage() {
                               href={href}
                               target="_blank"
                               rel="noopener noreferrer"
+                              className="max-w-full"
                             >
-                              <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-primary/20">
-                                <BookOpen className="h-3 w-3 mr-1" />
-                                {source.title}
+                              <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-primary/20 max-w-full whitespace-normal break-words text-left">
+                                <BookOpen className="h-3 w-3 mr-1 shrink-0" />
+                                <span className="min-w-0">{source.title}</span>
                               </Badge>
                             </a>
                           )

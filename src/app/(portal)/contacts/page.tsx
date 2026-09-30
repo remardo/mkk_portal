@@ -126,12 +126,12 @@ export default function ContactsPage() {
                 </h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   {cityBranches.map((branch) => (
-                    <Card key={branch.id}>
+                    <Card key={branch.id} className="min-w-0">
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-lg">{branch.name}</CardTitle>
-                        <CardDescription className="flex items-center gap-1">
-                          <MapPin className="h-4 w-4" />
-                          {branch.address}
+                        <CardTitle className="text-lg truncate">{branch.name}</CardTitle>
+                        <CardDescription className="flex items-center gap-1 min-w-0">
+                          <MapPin className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{branch.address}</span>
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-2">
@@ -150,9 +150,9 @@ export default function ContactsPage() {
                           </div>
                         )}
                         {branch.ops_manager && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <span>Руководитель: {branch.ops_manager.full_name}</span>
+                          <div className="flex items-center gap-2 text-sm min-w-0">
+                            <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <span className="truncate">Руководитель: {branch.ops_manager.full_name}</span>
                           </div>
                         )}
                       </CardContent>
@@ -171,15 +171,15 @@ export default function ContactsPage() {
                 <h2 className="text-lg font-semibold mb-4">{role}</h2>
                 <div className="grid gap-4 md:grid-cols-3">
                   {roleEmployees.map((emp) => (
-                    <Card key={emp.id}>
+                    <Card key={emp.id} className="min-w-0">
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-base">{emp.full_name}</CardTitle>
-                        <CardDescription>
+                        <CardTitle className="text-base truncate">{emp.full_name}</CardTitle>
+                        <CardDescription className="truncate">
                           {emp.branch?.name || "Центральный офис"}
                         </CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-2">
-                        <div className="text-sm text-muted-foreground">
+                      <CardContent className="space-y-2 min-w-0">
+                        <div className="text-sm text-muted-foreground truncate break-all">
                           {emp.email}
                         </div>
                         {emp.phone && (

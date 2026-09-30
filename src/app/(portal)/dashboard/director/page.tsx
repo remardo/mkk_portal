@@ -194,8 +194,8 @@ export default function DirectorDashboardPage() {
               <tbody>
                 {branchStats.map((branch) => (
                   <tr key={branch.branch_id} className="border-b hover:bg-muted/50">
-                    <td className="py-3 px-4 font-medium">{branch.branch_name}</td>
-                    <td className="py-3 px-4">{branch.city}</td>
+                    <td className="py-3 px-4 font-medium max-w-[200px] truncate">{branch.branch_name}</td>
+                    <td className="py-3 px-4 whitespace-nowrap">{branch.city}</td>
                     <td className="py-3 px-4 text-center">{branch.employee_count}</td>
                     <td className="py-3 px-4 text-center">{branch.open_tasks}</td>
                     <td className="py-3 px-4 text-center">

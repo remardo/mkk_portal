@@ -102,16 +102,16 @@ export default function DocumentsPage() {
     const isAcknowledged = acknowledgedDocs.has(doc.id)
     
     return (
-      <Card>
+      <Card className="min-w-0">
         <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-primary/10 p-2 rounded-lg">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="bg-primary/10 p-2 rounded-lg shrink-0">
                 <FileText className="h-5 w-5 text-primary" />
               </div>
-              <div>
-                <CardTitle className="text-base">{doc.title}</CardTitle>
-                <CardDescription>
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-base line-clamp-2 break-words">{doc.title}</CardTitle>
+                <CardDescription className="truncate">
                   {doc.category?.name} • Версия {doc.version}
                 </CardDescription>
               </div>
@@ -125,7 +125,7 @@ export default function DocumentsPage() {
         </CardHeader>
         <CardContent>
           {doc.description && (
-            <p className="text-sm text-muted-foreground mb-4">{doc.description}</p>
+            <p className="text-sm text-muted-foreground mb-4 line-clamp-3 break-words">{doc.description}</p>
           )}
           
           <div className="flex items-center justify-between">

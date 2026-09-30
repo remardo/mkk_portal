@@ -258,11 +258,11 @@ export default function ChatPage() {
                       }`}
                     >
                       {showAuthor && !isOwn && (
-                        <p className="text-xs font-medium mb-1 opacity-75">
+                        <p className="text-xs font-medium mb-1 opacity-75 truncate">
                           {message.author?.full_name}
                         </p>
                       )}
-                      <p className="text-sm">{message.content}</p>
+                      <p className="text-sm break-words [overflow-wrap:anywhere]">{message.content}</p>
                       <p className={`text-xs mt-1 ${isOwn ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
                         {formatRelativeTime(message.created_at)}
                       </p>
