@@ -30,8 +30,9 @@ DECLARE
     v_branch UUID;
 BEGIN
     -- Игнорируем входные user_role/user_branch_id, берём из auth
-    SELECT role, branch_id INTO v_role, v_branch
-    FROM profiles WHERE id = auth.uid() AND is_active = true;
+    -- (квалификация обязательна: имена OUT-параметров конфликтуют с колонками)
+    SELECT profiles.role, profiles.branch_id INTO v_role, v_branch
+    FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_active = true;
 
     -- Неактивный/неизвестный пользователь: пустой результат
     IF v_role IS NULL THEN

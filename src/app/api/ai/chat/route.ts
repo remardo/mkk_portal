@@ -116,8 +116,9 @@ export async function POST(req: NextRequest) {
         input: message,
       })
       const queryEmbedding = embeddingResponse.data[0].embedding
+      // PostgREST не кастит JSON-массив в vector — передаём строкой "[...]"
       const { data } = await supabase.rpc("match_documents" as never, {
-        query_embedding: queryEmbedding,
+        query_embedding: `[${queryEmbedding.join(",")}]`,
         match_threshold: Number(process.env.AI_MATCH_THRESHOLD || 0.3),
         match_count: 6,
         user_role: profile.role,
@@ -143,15 +144,26 @@ export async function POST(req: NextRequest) {
         type: toRouteType(doc.source_type),
       }))
     } else {
-      // Fallback 1: полнотекст по title_content
-      const { data: articles } = await supabase
+      // Fallback 1: полнотекст по title_content.
+      // websearch оставляет стоп-слова обязательными ("как" & ...), поэтому
+      // при пустом результате повторяем через plain (стоп-слова выкидываются).
+      let articles = null
+      const fb1 = await supabase
         .from("knowledge_articles")
         .select("id, title, content")
         .eq("status", "published")
-        .textSearch("title_content", message, {
-          type: "websearch",
-        })
+        .textSearch("title_content", message, { type: "websearch" })
         .limit(4)
+      articles = fb1.data
+      if (!articles || articles.length === 0) {
+        const fb1b = await supabase
+          .from("knowledge_articles")
+          .select("id, title, content")
+          .eq("status", "published")
+          .textSearch("title_content", message, { type: "plain" })
+          .limit(4)
+        articles = fb1b.data
+      }
 
       if (articles && articles.length > 0) {
         context = articles.map(a => a.content).join("\n\n")
@@ -161,20 +173,21 @@ export async function POST(req: NextRequest) {
           type: "knowledge",
         }))
       } else {
-        // Fallback 2: простой поиск по значимым словам в заголовках и документах
-        const words = message
-          .toLowerCase()
-          .replace(/[^a-zа-яё0-9\s]/gi, " ")
-          .split(/\s+/)
-          .filter((w) => w.length > 4)
-          .slice(0, 4)
+        // Fallback 2: ILIKE по каждому значимому слову отдельно (OR)
+        const words = [...new Set(
+          message
+            .toLowerCase()
+            .replace(/[^a-zа-яё0-9\s]/gi, " ")
+            .split(/\s+/)
+            .filter((w) => w.length > 4)
+        )].slice(0, 5)
         if (words.length > 0) {
-          const pattern = `%${words.join("%")}%`
+          const orTitle = words.map((w) => `title.ilike.%${w}%`).join(",")
           const [{ data: byTitle }, { data: byDocs }] = await Promise.all([
             supabase.from("knowledge_articles").select("id, title, content")
-              .eq("status", "published").ilike("title", pattern).limit(3),
+              .eq("status", "published").or(orTitle).limit(4),
             supabase.from("documents").select("id, title, content, description")
-              .ilike("title", pattern).limit(2),
+              .or(orTitle).limit(3),
           ])
           const docs = [
             ...(byTitle || []).map((a) => ({ title: a.title, id: a.id, type: "knowledge", text: a.content })),
