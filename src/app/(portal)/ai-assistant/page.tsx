@@ -28,6 +28,20 @@ export default function AIAssistantPage() {
   const [loading, setLoading] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  const suggestions = [
+    "Какие тарифы есть для новых клиентов?",
+    "Что нужно для оформления займа?",
+    "Какая ставка по тарифу День рождения?",
+    "Куда обращаться с жалобой клиента?",
+    "Какой срок у тарифа Особый?",
+  ]
+
+  const ask = (q: string) => {
+    if (loading) return
+    setInput(q)
+    setTimeout(() => document.getElementById("ai-input")?.focus(), 0)
+  }
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -54,7 +68,10 @@ export default function AIAssistantPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: input,
-          history: messages.map(m => ({ role: m.role, content: m.content })),
+          history: [...messages, userMessage]
+            .filter((m) => m.id !== "welcome")
+            .slice(-5)
+            .map(m => ({ role: m.role, content: m.content })),
         }),
       })
 
@@ -141,19 +158,25 @@ export default function AIAssistantPage() {
                     <div className="mt-3 pt-3 border-t border-border/50">
                       <p className="text-xs text-muted-foreground mb-2">Источники:</p>
                       <div className="flex flex-wrap gap-2">
-                        {message.sources.map((source, idx) => (
-                          <a
-                            key={idx}
-                            href={`/${source.type}/${source.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-primary/20">
-                              <BookOpen className="h-3 w-3 mr-1" />
-                              {source.title}
-                            </Badge>
-                          </a>
-                        ))}
+                        {message.sources.map((source, idx) => {
+                          const href =
+                            source.type === "documents"
+                              ? `/documents/${source.id}`
+                              : `/knowledge/${source.id}`
+                          return (
+                            <a
+                              key={idx}
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-primary/20">
+                                <BookOpen className="h-3 w-3 mr-1" />
+                                {source.title}
+                              </Badge>
+                            </a>
+                          )
+                        })}
                       </div>
                     </div>
                   )}
@@ -180,8 +203,18 @@ export default function AIAssistantPage() {
 
         {/* Input */}
         <div className="p-4 border-t">
+          {messages.length <= 1 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {suggestions.map((q) => (
+                <Button key={q} variant="outline" size="sm" onClick={() => ask(q)}>
+                  {q}
+                </Button>
+              ))}
+            </div>
+          )}
           <div className="flex gap-2">
             <Input
+              id="ai-input"
               placeholder="Задайте вопрос..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
